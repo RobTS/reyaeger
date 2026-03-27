@@ -7,6 +7,7 @@ import { SettingsRoute } from './routes/settings';
 import { YaegerConnectionProvider } from './context/YaegerConnectionProvider.tsx';
 import { RecorderProvider } from './context/RecorderProvider.tsx';
 import { PidControlProvider } from './context/PidControlProvider.tsx';
+import { ProfileExecutionProvider } from './context/ProfileExecutionProvider.tsx';
 
 //const HOST = 'yaeger.local';
 const HOST = 'localhost:8080';
@@ -17,12 +18,14 @@ createRoot(document.getElementById('root')!).render(
     <YaegerConnectionProvider host={HOST}>
       <PidControlProvider>
         <RecorderProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<HomeRoute />} />
-              <Route path="/settings" element={<SettingsRoute />} />
-            </Routes>
-          </BrowserRouter>
+          <ProfileExecutionProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<HomeRoute />} />
+                <Route path="/settings" element={<SettingsRoute />} />
+              </Routes>
+            </BrowserRouter>
+          </ProfileExecutionProvider>
         </RecorderProvider>
       </PidControlProvider>
     </YaegerConnectionProvider>

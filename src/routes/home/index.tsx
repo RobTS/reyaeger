@@ -4,19 +4,24 @@ import { MetricsCard } from '../../components/cards/MetricsCard.tsx';
 import cx from 'classnames';
 import {
   useRecorderCommands,
+  useRecorderStartDate,
   useRecorderStatus,
 } from '../../hooks/useRecorder.ts';
 import { RoastingLineChart } from './chart.tsx';
 import { useYaegerLastMessage } from '../../hooks/useYaeger.ts';
 import { RoastingControls } from './controls.tsx';
-import { usePidControlTuneStatus } from '../../hooks/usePidControl.ts';
+import { ProfileControls } from './profile.tsx';
+import { DateTime } from 'luxon';
 
 export const HomeRoute: React.FC = () => {
   const lastMessage = useYaegerLastMessage();
   const { start, stop } = useRecorderCommands();
+  const startDate = useRecorderStartDate();
   const recording = useRecorderStatus();
-  const [tuning, setTuning] = usePidControlTuneStatus();
 
+  const duration = startDate
+    ? DateTime.now().diff(startDate).toFormat('mm:ss')
+    : undefined;
   return (
     <Layout>
       <div className={'flex flex-col gap-4 items-center'}>
@@ -44,18 +49,9 @@ export const HomeRoute: React.FC = () => {
               }
             }}
           >
+            {duration ? duration : ''}
+            <br />
             {recording ? 'Pause' : 'Record'}
-          </div>
-          <div
-            className={cx(
-              'rounded-2xl w-30 flex flex-col  justify-center text-center cursor-pointer font-bold text-white text-lg',
-              recording ? 'bg-red-500' : 'bg-green-500',
-            )}
-            onClick={() => {
-              setTuning(!tuning);
-            }}
-          >
-            {tuning ? 'Tuning...' : 'Tune PID'}
           </div>
         </div>
         <div
@@ -65,7 +61,10 @@ export const HomeRoute: React.FC = () => {
         >
           <RoastingLineChart />
         </div>
-        <RoastingControls />
+        <div className={'flex flex-row gap-4 w-full'}>
+          <ProfileControls />
+          <RoastingControls />
+        </div>
       </div>
     </Layout>
   );

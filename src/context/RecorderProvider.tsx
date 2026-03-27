@@ -6,20 +6,18 @@ import {
   type RecorderContextType,
 } from './RecorderContext.ts';
 import { last } from 'lodash-es';
-import { useYaegerLastMessage } from '../hooks/useYaeger.ts';
 import type { YaegerMessageWrapper } from '../types/connection.ts';
 import { usePidControlSetpoint } from '../hooks/usePidControl.ts';
+import { useYaegerLastMessage } from '../hooks/useYaeger.ts';
 
 type Props = {
   children: React.ReactNode;
 };
 
 export const RecorderProvider: React.FC<Props> = ({ children }) => {
-  const [recording, setRecording] = useState<boolean>(true);
+  const [recording, setRecording] = useState<boolean>(false);
   const [records, setRecords] = useState<YaegerMessageWrapper[]>([]);
-  const [startDate, setStartDate] = useState<DateTime | undefined>(
-    DateTime.now(),
-  );
+  const [startDate, setStartDate] = useState<DateTime | undefined>();
   const [setpoint] = usePidControlSetpoint();
 
   const start = useCallback(() => {

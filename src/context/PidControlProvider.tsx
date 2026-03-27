@@ -10,38 +10,29 @@ import {
   useYaegerSendCommand,
 } from '../hooks/useYaeger.ts';
 import type { PidReference } from '../types/pid.ts';
-import { PidAutoTune } from '../common/pidTune.ts';
 
 type Props = {
   children: React.ReactNode;
 };
 
+// Dummy:  kp: 0.4, ki: 0.05, kd: 0.002,
 export const PidControlProvider: React.FC<Props> = ({ children }) => {
   const [setpoint, setSetpoint] = useState<number>(0);
   const [enabled, setEnabled] = useState(true);
   const [tuneEnabled, setTuneEnabled] = useState(false);
   const [values, setValues] = useState({
-    kp: 5,
-    ki: 0.01,
-    kd: 15,
+    kp: 0.4,
+    ki: 0.05,
+    kd: 0.002,
   });
   const [referenceValue, setReferenceValue] = useState<PidReference>('ET');
   const sendCommand = useYaegerSendCommand();
   const lastMessage = useYaegerLastMessage();
 
   const controller = useMemo(() => new PidController(values), [values]);
-  const pidTune = useMemo(() => {
-    if (!tuneEnabled) return;
-    return new PidAutoTune({
-      setPidEnabled: setEnabled,
-      setHeaterSetpoint: () => sendCommand({ BurnerVal: 100 }),
-      calibrationTemp: 180,
-    });
-  }, [sendCommand, tuneEnabled]);
 
   useEffect(() => {
     if (!enabled) return;
-    if (pidTune) return;
     if (!lastMessage) return;
 
     const interval = setInterval(() => {
@@ -64,35 +55,12 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
     return () => {
       clearInterval(interval);
     };
-  }, [
-    controller,
-    enabled,
-    lastMessage,
-    pidTune,
-    referenceValue,
-    sendCommand,
-    setpoint,
-  ]);
+  }, [controller, enabled, lastMessage, referenceValue, sendCommand, setpoint]);
 
   useEffect(() => {
     if (enabled) return;
     sendCommand({ BurnerVal: 0 });
   }, [enabled, sendCommand]);
-
-  useEffect(() => {
-    if (!pidTune) return;
-    if (!lastMessage) return;
-    pidTune.temperatureUpdate(
-      lastMessage.time,
-      lastMessage.message.ET,
-      setpoint,
-    );
-    const result = pidTune.checkForCompletion();
-    if (!result) return;
-    console.log('Final result', result);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setTuneEnabled(false);
-  }, [lastMessage, pidTune, setpoint]);
 
   const providerProps =
     useMemo<PidControlContextType>((): PidControlContextType => {

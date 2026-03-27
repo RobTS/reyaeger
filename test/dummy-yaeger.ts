@@ -27,33 +27,17 @@ const wss = new WebSocketServer({
 const heaterWatts = 1100;
 
 const getHeaterEfficiency = (burnerVal: number): number => {
-  if (burnerVal > 90) return 0.2;
-  if (burnerVal > 80) return 0.4;
-  if (burnerVal > 70) return 0.8;
-  if (burnerVal > 60) return 0.8;
-  if (burnerVal > 50) return 0.8;
-  if (burnerVal > 40) return 0.9;
-  if (burnerVal > 30) return 0.9;
-  if (burnerVal > 20) return 0.9;
-  return 0.9;
+  return 1 - (burnerVal / 100) * 0.5;
 };
 
 const getBurnerTemp = (burnerVal: number): number => {
-  if (burnerVal > 90) return 220;
-  if (burnerVal > 80) return 200;
-  if (burnerVal > 70) return 180;
-  if (burnerVal > 60) return 160;
-  if (burnerVal > 50) return 140;
-  if (burnerVal > 40) return 120;
-  if (burnerVal > 30) return 100;
-  if (burnerVal > 20) return 80;
-  return 20;
+  return 20 + (burnerVal / 100) * 220;
 };
 
-const beanMass = 800;
+const beanMass = 1600;
 let beanCaloriesApplied = beanMass * 20;
 
-const exhaustMass = 100;
+const exhaustMass = 200;
 let exhaustCaloriesApplied = exhaustMass * 20;
 
 let bt = 20;
