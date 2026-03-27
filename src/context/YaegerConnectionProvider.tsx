@@ -10,7 +10,6 @@ import type {
   YaegerMessage,
   YaegerMessageWrapper,
 } from '../types/connection.ts';
-import { useDebounceValue } from 'usehooks-ts';
 
 type Props = {
   host: string;
@@ -24,9 +23,9 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
   const [clientId, setClientId] = useState<number | undefined>();
   const [ws, setWs] = useState<WebSocket | undefined>();
   const [status, setStatus] = useState<WsStatus>('disconnected');
-  const [lastMessage, setLastMessage] = useDebounceValue<
+  const [lastMessage, setLastMessage] = useState<
     YaegerMessageWrapper | undefined
-  >(undefined, 100, { leading: true, trailing: true, maxWait: 100 });
+  >();
   const [error, setError] = useState<Error | undefined>();
   const commandsToSend = useRef<
     { BurnerVal?: number; FanVal?: number } | undefined

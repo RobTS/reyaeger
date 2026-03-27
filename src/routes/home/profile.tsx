@@ -39,17 +39,17 @@ export const ProfileControls: React.FC = () => {
           }}
         >
           {({ getRootProps, getInputProps }) => (
-            <section>
-              <div
-                {...getRootProps()}
-                className={
-                  'border-2 border-dashed border-gray-300 h-20 w-full rounded-2xl p-4'
-                }
-              >
-                <input {...getInputProps()} />
-                <p>Drag 'n' drop some files here, or click to select files</p>
+            <div
+              {...getRootProps()}
+              className={
+                'flex flex-col flex-1 border-2 border-dashed border-gray-300 h-20 w-full rounded-2xl p-4 items-center justify-center'
+              }
+            >
+              <input {...getInputProps()} />
+              <div className={'text-center'}>
+                Drop a profile here, or click to select a file
               </div>
-            </section>
+            </div>
           )}
         </Dropzone>
       ) : (

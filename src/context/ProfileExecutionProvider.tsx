@@ -28,21 +28,13 @@ export const ProfileExecutionProvider: React.FC<Props> = ({ children }) => {
   useEffect(() => {
     if (!startDate) return;
 
-    const interval = setInterval(() => {
-      const timeElapsed = -startDate.diffNow().as('milliseconds');
-      const config = profileProcessor?.getConfigAtTime(timeElapsed);
-      if (config) {
-        setSetpoint(config.setpoint);
-        if (config.fanValue !== undefined)
-          sendCommand({ FanVal: config.fanValue });
-      } else {
-        setStartDate(undefined);
-      }
-    }, 1000);
-
-    return () => {
-      clearInterval(interval);
-    };
+    const timeElapsed = -startDate.diffNow().as('milliseconds');
+    const config = profileProcessor?.getConfigAtTime(timeElapsed);
+    if (config) {
+      setSetpoint(config.setpoint);
+      if (config.fanValue !== undefined)
+        sendCommand({ FanVal: config.fanValue });
+    }
   }, [profileProcessor, sendCommand, setSetpoint, startDate]);
 
   const providerProps = useMemo((): ProfileExecutionContextType => {

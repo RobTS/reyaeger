@@ -12,12 +12,27 @@ import { useYaegerLastMessage } from '../../hooks/useYaeger.ts';
 import { RoastingControls } from './controls.tsx';
 import { ProfileControls } from './profile.tsx';
 import { DateTime } from 'luxon';
+import { usePidControlTuneStatus } from '../../hooks/usePidControl.ts';
+
+const EtCard = () => {
+  const lastMessage = useYaegerLastMessage();
+  return (
+    <MetricsCard name={'ET'} unit={'C'} value={lastMessage?.message.ET || 0} />
+  );
+};
+
+const BtCard = () => {
+  const lastMessage = useYaegerLastMessage();
+  return (
+    <MetricsCard name={'BT'} unit={'C'} value={lastMessage?.message.BT || 0} />
+  );
+};
 
 export const HomeRoute: React.FC = () => {
-  const lastMessage = useYaegerLastMessage();
   const { start, stop } = useRecorderCommands();
   const startDate = useRecorderStartDate();
   const recording = useRecorderStatus();
+  const [tuning, setTuning] = usePidControlTuneStatus();
 
   const duration = startDate
     ? DateTime.now().diff(startDate).toFormat('mm:ss')
@@ -26,16 +41,8 @@ export const HomeRoute: React.FC = () => {
     <Layout>
       <div className={'flex flex-col gap-4 items-center'}>
         <div className={'flex flex-row flex-wrap gap-4 justify-center'}>
-          <MetricsCard
-            name={'ET'}
-            unit={'C'}
-            value={lastMessage?.message.ET || 0}
-          />
-          <MetricsCard
-            name={'BT'}
-            unit={'C'}
-            value={lastMessage?.message.BT || 0}
-          />
+          <EtCard />
+          <BtCard />
           <div
             className={cx(
               'rounded-2xl w-30 flex flex-col  justify-center text-center cursor-pointer font-bold text-white text-lg',
@@ -52,6 +59,18 @@ export const HomeRoute: React.FC = () => {
             {duration ? duration : ''}
             <br />
             {recording ? 'Pause' : 'Record'}
+          </div>
+
+          <div
+            className={cx(
+              'rounded-2xl w-30 flex flex-col  justify-center text-center cursor-pointer font-bold text-white text-lg',
+              recording ? 'bg-red-500' : 'bg-green-500',
+            )}
+            onClick={() => {
+              setTuning(!tuning);
+            }}
+          >
+            {tuning ? 'Tuning...' : 'Tune PID'}
           </div>
         </div>
         <div

@@ -12,6 +12,7 @@ import {
 import annotationPlugin from 'chartjs-plugin-annotation';
 import { DateTime } from 'luxon';
 import type { YaegerMessageWrapper } from '../../types/connection.ts';
+import { useMemo } from 'react';
 
 Chart.register(
   LinearScale,
@@ -47,22 +48,35 @@ export const LineChart: React.FC<{
   records: YaegerMessageWrapper[];
 }> = ({ records, startDate }) => {
   // Calculate RoR and apply rolling averages
-  const beanTemps = records.map((r) => r.message.BT);
-  const envTemps = records.map((r) => r.message.ET);
-  const setpoints = records.map((r) => r.extras?.setpoint || 0);
-
-  const timestamps = startDate
-    ? records.map((r) => r.time.diff(startDate).as('seconds'))
-    : [];
-
-  const btRor = applyRollingAverage(
-    calculateRoR(beanTemps, timestamps),
-    windowSize,
-  );
-  const etRor = applyRollingAverage(
-    calculateRoR(envTemps, timestamps),
-    windowSize,
-  );
+  const { beanTemps, envTemps, timestamps, setpoints, btRor, etRor } =
+    useMemo(() => {
+      const beanTemps: number[] = [];
+      const envTemps: number[] = [];
+      const setpoints: number[] = [];
+      const timestamps: number[] = [];
+      records.forEach((r) => {
+        beanTemps.push(r.message.BT);
+        envTemps.push(r.message.ET);
+        timestamps.push(startDate ? r.time.diff(startDate).as('seconds') : 0);
+        setpoints.push(r.extras?.setpoint || 0);
+      });
+      const btRor = applyRollingAverage(
+        calculateRoR(beanTemps, timestamps),
+        windowSize,
+      );
+      const etRor = applyRollingAverage(
+        calculateRoR(envTemps, timestamps),
+        windowSize,
+      );
+      return {
+        beanTemps,
+        envTemps,
+        timestamps,
+        setpoints,
+        btRor,
+        etRor,
+      };
+    }, [records, startDate]);
 
   return (
     <Line

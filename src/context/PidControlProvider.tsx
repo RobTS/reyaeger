@@ -10,6 +10,7 @@ import {
   useYaegerSendCommand,
 } from '../hooks/useYaeger.ts';
 import type { PidReference } from '../types/pid.ts';
+import { PidAutoTune } from '../common/pidTune.ts';
 
 type Props = {
   children: React.ReactNode;
@@ -31,31 +32,57 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
 
   const controller = useMemo(() => new PidController(values), [values]);
 
+  const pidTune = useMemo(() => {
+    if (!tuneEnabled) return;
+    return new PidAutoTune({
+      setPidEnabled: setEnabled,
+      setHeaterSetpoint: () => sendCommand({ BurnerVal: 100 }),
+      calibrationTemp: 180,
+    });
+  }, [sendCommand, tuneEnabled]);
+
   useEffect(() => {
     if (!enabled) return;
+    if (pidTune) return;
     if (!lastMessage) return;
+    const bt = lastMessage.message.BT;
+    const et = lastMessage.message.ET;
 
-    const interval = setInterval(() => {
-      const bt = lastMessage.message.BT;
-      const et = lastMessage.message.ET;
+    const temp =
+      referenceValue === 'BT'
+        ? bt
+        : referenceValue === 'ET'
+          ? et
+          : Math.max(bt, et);
+    const newBurnerVal = Math.max(
+      Math.min(controller.compute(setpoint, temp), 100),
+      0,
+    );
+    sendCommand({ BurnerVal: newBurnerVal });
+  }, [
+    controller,
+    enabled,
+    lastMessage,
+    pidTune,
+    referenceValue,
+    sendCommand,
+    setpoint,
+  ]);
 
-      const temp =
-        referenceValue === 'BT'
-          ? bt
-          : referenceValue === 'ET'
-            ? et
-            : Math.max(bt, et);
-      const newBurnerVal = Math.max(
-        Math.min(controller.compute(setpoint, temp), 100),
-        0,
-      );
-      sendCommand({ BurnerVal: newBurnerVal });
-    }, 1000 / 30);
-
-    return () => {
-      clearInterval(interval);
-    };
-  }, [controller, enabled, lastMessage, referenceValue, sendCommand, setpoint]);
+  useEffect(() => {
+    if (!pidTune) return;
+    if (!lastMessage) return;
+    pidTune.temperatureUpdate(
+      lastMessage.time,
+      lastMessage.message.ET,
+      setpoint,
+    );
+    const result = pidTune.checkForCompletion();
+    if (!result) return;
+    console.log('Final result', result);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTuneEnabled(false);
+  }, [lastMessage, pidTune, setpoint]);
 
   useEffect(() => {
     if (enabled) return;

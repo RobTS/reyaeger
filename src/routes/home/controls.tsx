@@ -53,7 +53,7 @@ export const RoastingControls: React.FC = () => {
         }
       >
         <div>
-          Burner Control - {lastMessage?.message.BurnerVal.toFixed(1)} °C
+          Burner Control - {lastMessage?.message.BurnerVal.toFixed(1)} %
         </div>
         <input
           type="range"
