@@ -14,6 +14,7 @@ export type YaegerMessage = {
 
 export type YaegerMessageWrapper = {
   message: YaegerMessage;
+  extras?: { setpoint?: number };
   time: DateTime;
 };
 

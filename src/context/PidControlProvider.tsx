@@ -21,8 +21,8 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
   const [enabled, setEnabled] = useState(true);
   const [tuneEnabled, setTuneEnabled] = useState(false);
   const [values, setValues] = useState({
-    ki: 5,
-    kp: 0.01,
+    kp: 5,
+    ki: 0.01,
     kd: 15,
   });
   const [referenceValue, setReferenceValue] = useState<PidReference>('ET');
@@ -88,9 +88,10 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
       setpoint,
     );
     const result = pidTune.checkForCompletion();
+    if (!result) return;
     console.log('Final result', result);
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (result) setTuneEnabled(false);
+    setTuneEnabled(false);
   }, [lastMessage, pidTune, setpoint]);
 
   const providerProps =

@@ -23,10 +23,47 @@ Chart.register(
   annotationPlugin,
 );
 
+const calculateRoR = (temps: number[], times: number[]) =>
+  temps.map((temp, i) => {
+    if (i === 0) return null; // No RoR for the first data point
+    const deltaTemp = temp - temps[i - 1];
+    const deltaTime = times[i] - times[i - 1];
+    return deltaTime > 0 ? deltaTemp / deltaTime : 0;
+  });
+
+// Helper to calculate rolling average
+const applyRollingAverage = (values: (number | null)[], size: number) => {
+  return values.map((val, i, arr) => {
+    if (val === null || i < size - 1) return val; // Skip if insufficient data
+    const frame = arr.slice(i - size + 1, i + 1) as number[];
+    return frame.reduce((sum, v) => sum + v * 60, 0) / size;
+  });
+};
+
+const windowSize = 30;
+
 export const LineChart: React.FC<{
   startDate: DateTime | undefined;
   records: YaegerMessageWrapper[];
 }> = ({ records, startDate }) => {
+  // Calculate RoR and apply rolling averages
+  const beanTemps = records.map((r) => r.message.BT);
+  const envTemps = records.map((r) => r.message.ET);
+  const setpoints = records.map((r) => r.extras?.setpoint || 0);
+
+  const timestamps = startDate
+    ? records.map((r) => r.time.diff(startDate).as('seconds'))
+    : [];
+
+  const btRor = applyRollingAverage(
+    calculateRoR(beanTemps, timestamps),
+    windowSize,
+  );
+  const etRor = applyRollingAverage(
+    calculateRoR(envTemps, timestamps),
+    windowSize,
+  );
+
   return (
     <Line
       options={{
@@ -129,15 +166,13 @@ export const LineChart: React.FC<{
         animation: false,
       }}
       data={{
-        labels: startDate
-          ? records.map((r) => r.time.diff(startDate).as('seconds'))
-          : [],
+        labels: timestamps,
         datasets: [
           {
             label: 'Bean Temp',
             borderColor: 'blue',
             pointStyle: false,
-            data: records.map((r) => r.message.BT),
+            data: beanTemps,
             yAxisID: 'y1',
             tension: 0.4,
           },
@@ -145,7 +180,7 @@ export const LineChart: React.FC<{
             label: 'Exhaust Temp',
             borderColor: 'red',
             pointStyle: false,
-            data: records.map((r) => r.message.ET),
+            data: envTemps,
             yAxisID: 'y1',
             tension: 0.4,
           },
@@ -163,6 +198,30 @@ export const LineChart: React.FC<{
             borderColor: 'orange',
             data: records.map((r) => r.message.BurnerVal),
             yAxisID: 'y2',
+            tension: 0.1,
+          },
+          {
+            label: 'BT Rate of Rise (°C/min)',
+            borderColor: 'green',
+            pointStyle: false,
+            data: btRor,
+            yAxisID: 'y3',
+            tension: 0.2,
+          },
+          {
+            label: 'ET Rate of Rise (°C/min)',
+            borderColor: 'purple',
+            pointStyle: false,
+            data: etRor,
+            yAxisID: 'y3',
+            tension: 0.2,
+          },
+          {
+            label: 'Setpoint (°C)',
+            borderColor: '#03fc7b',
+            pointStyle: false,
+            data: setpoints,
+            yAxisID: 'y1',
             tension: 0.1,
           },
         ],

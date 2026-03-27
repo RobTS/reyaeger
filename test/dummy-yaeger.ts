@@ -38,7 +38,7 @@ const getHeaterEfficiency = (burnerVal: number): number => {
   return 0.9;
 };
 
-const getEt = (burnerVal: number): number => {
+const getBurnerTemp = (burnerVal: number): number => {
   if (burnerVal > 90) return 220;
   if (burnerVal > 80) return 200;
   if (burnerVal > 70) return 180;
@@ -50,9 +50,11 @@ const getEt = (burnerVal: number): number => {
   return 20;
 };
 
-let caloriesApplied = 800 * 20;
-
 const beanMass = 800;
+let beanCaloriesApplied = beanMass * 20;
+
+const exhaustMass = 100;
+let exhaustCaloriesApplied = exhaustMass * 20;
 
 let bt = 20;
 let et = 20;
@@ -69,13 +71,16 @@ const computeCalories = () => {
   lastSetting = { command: setting.command, time: measuringTime };
   const time = measuringTime.diff(setting.time).as('milliseconds');
   //console.log('Time elapsed: ' + time);
-  et = getEt(setting.command.BurnerVal);
+  const burnerTemp = getBurnerTemp(setting.command.BurnerVal);
   const efficiency = getHeaterEfficiency(setting.command.FanVal);
-  const tempDelta = et - bt;
-  caloriesApplied += (time / 10000) * efficiency * tempDelta * heaterWatts;
+  exhaustCaloriesApplied +=
+    (time / 10000) * efficiency * (burnerTemp - et) * heaterWatts;
+  beanCaloriesApplied +=
+    (time / 10000) * efficiency * (burnerTemp - bt) * heaterWatts;
   //console.log('Calories  applied: ' + caloriesApplied);
   //console.log('TempDelta  : ' + tempDelta);
-  bt = caloriesApplied / beanMass;
+  bt = beanCaloriesApplied / beanMass;
+  et = exhaustCaloriesApplied / exhaustMass;
   //et = Math.abs(amb);
 };
 

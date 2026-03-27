@@ -8,15 +8,19 @@ import {
 import { last } from 'lodash-es';
 import { useYaegerLastMessage } from '../hooks/useYaeger.ts';
 import type { YaegerMessageWrapper } from '../types/connection.ts';
+import { usePidControlSetpoint } from '../hooks/usePidControl.ts';
 
 type Props = {
   children: React.ReactNode;
 };
 
 export const RecorderProvider: React.FC<Props> = ({ children }) => {
-  const [recording, setRecording] = useState<boolean>(false);
+  const [recording, setRecording] = useState<boolean>(true);
   const [records, setRecords] = useState<YaegerMessageWrapper[]>([]);
-  const [startDate, setStartDate] = useState<DateTime | undefined>();
+  const [startDate, setStartDate] = useState<DateTime | undefined>(
+    DateTime.now(),
+  );
+  const [setpoint] = usePidControlSetpoint();
 
   const start = useCallback(() => {
     console.log('Starting recorder');
@@ -30,7 +34,7 @@ export const RecorderProvider: React.FC<Props> = ({ children }) => {
   }, []);
 
   const clear = useCallback(() => {
-    console.log('Clearing recorder');
+    console.log('Clearing rec order');
     setRecords([]);
     setStartDate(undefined);
   }, []);
@@ -40,9 +44,19 @@ export const RecorderProvider: React.FC<Props> = ({ children }) => {
   useEffect(() => {
     if (!record) return;
     if (!recording) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (last(records)?.time !== record.time) setRecords([...records, record]);
-  }, [record, recording, records]);
+
+    if (last(records)?.time !== record.time)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setRecords([
+        ...records,
+        {
+          ...record,
+          extras: {
+            setpoint,
+          },
+        },
+      ]);
+  }, [record, recording, records, setpoint]);
 
   const providerProps = useMemo<RecorderContextType>(() => {
     return {
