@@ -90,7 +90,10 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
 
   const sendCommand = useCallback(
     (command: { BurnerVal?: number; FanVal?: number }) => {
-      commandsToSend.current = command;
+      commandsToSend.current = {
+        ...(commandsToSend.current || {}),
+        ...command,
+      };
     },
     [],
   );

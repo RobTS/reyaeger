@@ -46,15 +46,16 @@ export class ProfileProcessor {
         continue;
       } else {
         return {
-          setpoint:
-            Math.floor(
-              interpolateSetpoint(
-                previousStep?.setpoint || 0,
-                step.setpoint,
-                millis / stepDurationMs,
-                step.interpolation,
-              ) * 10,
-            ) / 10,
+          setpoint: step.interpolation
+            ? Math.floor(
+                interpolateSetpoint(
+                  previousStep?.setpoint || 0,
+                  step.setpoint,
+                  millis / stepDurationMs,
+                  step.interpolation,
+                ) * 10,
+              ) / 10
+            : step.setpoint,
           fanValue: step.fanValue,
         };
       }

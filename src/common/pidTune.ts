@@ -3,6 +3,9 @@ import type { PidData } from '../types/pid.ts';
 
 const TUNE_PID_DELTA = 5.0;
 
+/**
+ * Simplified conversion of Klipper's Autotune mechanism
+ */
 export class PidAutoTune {
   private setHeaterSetpoint: (value: number) => void;
   private setPidEnabled: (value: boolean) => void;
@@ -15,10 +18,6 @@ export class PidAutoTune {
   private peakTime: DateTime = DateTime.now();
   // Peak recording
   private peaks: { time: DateTime; temp: number }[] = [];
-  // Sample recording
-  lastPwm: number = 0;
-  pwmSamples: { time: DateTime; value: number }[] = [];
-  tempSamples: { time: DateTime; temp: number }[] = [];
 
   constructor(params: {
     setHeaterSetpoint: (value: number) => void;
@@ -30,24 +29,12 @@ export class PidAutoTune {
     this.calibrationTemp = params.calibrationTemp;
   }
 
-  public setPwm(time: DateTime, value: boolean) {
-    const pwmValue = value ? 100 : 0;
-    if (pwmValue !== this.lastPwm) {
-      this.pwmSamples.push({ time, value: pwmValue });
-    }
-    this.lastPwm = value ? 100 : 0;
-    console.log(this.lastPwm);
-    this.setPidEnabled(value);
-  }
-
   checkForCompletion(): PidData | undefined {
     if (this.peaks.length <= 20) return;
     return this.calcFinalPid();
   }
 
   public temperatureUpdate(time: DateTime, temp: number, targetTemp: number) {
-    this.tempSamples.push({ time, temp });
-
     // Check if the temperature has crossed the target and
     // enable/disable the heater if so.
     if (this.heating && temp >= targetTemp) {
@@ -62,13 +49,13 @@ export class PidAutoTune {
 
     // Check if this temperature is a peak and record it if so
     if (this.heating) {
-      this.setPwm(time, true);
+      this.setPidEnabled(true);
       if (temp < this.peak) {
         this.peak = temp;
         this.peakTime = time;
       }
     } else {
-      this.setPwm(time, false);
+      this.setPidEnabled(false);
       if (temp > this.peak) {
         this.peak = temp;
         this.peakTime = time;
@@ -95,7 +82,6 @@ export class PidAutoTune {
     const timeDiff = this.peaks[pos].time
       .diff(this.peaks[pos - 2].time)
       .as('milliseconds');
-    console.log(timeDiff);
 
     // Use Astrom-Hagglund method to estimate Ku and Tu
     const amplitude = 0.5 * Math.abs(tempDiff);

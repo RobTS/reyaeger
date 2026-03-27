@@ -3,7 +3,7 @@ export type Profile = {
 };
 
 export type ProfileStep = {
-  interpolation: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
+  interpolation?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
   setpoint: number;
   duration: number;
   fanValue?: number;

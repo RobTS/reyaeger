@@ -10,6 +10,7 @@ export type PidControlContextType = {
   setTuneEnabled: (enabled: boolean) => void;
   setpoint: number;
   setSetpoint: (setpoint: number) => void;
+  tuningResult: PidData | undefined;
   referenceValue: PidReference;
   setReferenceValue: (referenceValue: PidReference) => void;
 };
@@ -20,6 +21,7 @@ export const PidControlContext = createContext<PidControlContextType>({
   enabled: false,
   setEnabled: () => {},
   tuneEnabled: false,
+  tuningResult: undefined,
   setTuneEnabled: () => {},
   setpoint: 0,
   setSetpoint: () => {},

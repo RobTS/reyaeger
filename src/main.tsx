@@ -9,8 +9,8 @@ import { RecorderProvider } from './context/RecorderProvider.tsx';
 import { PidControlProvider } from './context/PidControlProvider.tsx';
 import { ProfileExecutionProvider } from './context/ProfileExecutionProvider.tsx';
 
-//const HOST = 'yaeger.local';
-const HOST = 'localhost:8080';
+const HOST = 'yaeger.local';
+//const HOST = 'localhost:8080';
 //const HOST =  window.location.host;
 
 createRoot(document.getElementById('root')!).render(

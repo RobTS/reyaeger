@@ -9,28 +9,35 @@ import {
   useYaegerLastMessage,
   useYaegerSendCommand,
 } from '../hooks/useYaeger.ts';
-import type { PidReference } from '../types/pid.ts';
+import type { PidData, PidReference } from '../types/pid.ts';
 import { PidAutoTune } from '../common/pidTune.ts';
 
 type Props = {
   children: React.ReactNode;
 };
 
-// Dummy:   kp: 20.6860275711623,  ki: 0.2,  kd: 8,
+// Dummy:  kp: 20, ki: 0.6, kd: 1,
+// OwnMachine:
 export const PidControlProvider: React.FC<Props> = ({ children }) => {
   const [setpoint, setSetpoint] = useState<number>(0);
   const [enabled, setEnabled] = useState(true);
   const [tuneEnabled, setTuneEnabled] = useState(false);
+  const [tuningResult, setTuningResult] = useState<PidData | undefined>(
+    undefined,
+  );
   const [values, setValues] = useState({
-    kp: 21,
+    kp: 20,
     ki: 0.6,
-    kd: 18,
+    kd: 1,
   });
   const [referenceValue, setReferenceValue] = useState<PidReference>('ET');
   const sendCommand = useYaegerSendCommand();
   const lastMessage = useYaegerLastMessage();
-
-  const controller = useMemo(() => new PidController(values), [values]);
+  const hasSetpoint = !!setpoint;
+  const controller = useMemo(
+    () => (hasSetpoint ? new PidController(values) : undefined),
+    [hasSetpoint, values],
+  );
 
   const pidTune = useMemo(() => {
     if (!tuneEnabled) return;
@@ -44,6 +51,7 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
   useEffect(() => {
     if (!enabled) return;
     if (pidTune) return;
+    if (!controller) return;
     if (!lastMessage) return;
     const bt = lastMessage.message.BT;
     const et = lastMessage.message.ET;
@@ -81,6 +89,7 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
     if (!result) return;
     console.log('Final result', result);
     // eslint-disable-next-line react-hooks/set-state-in-effect
+    setTuningResult(result);
     setTuneEnabled(false);
   }, [lastMessage, pidTune, setpoint]);
 
@@ -98,12 +107,13 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
         setValues,
         tuneEnabled,
         setTuneEnabled,
+        tuningResult,
         setpoint,
         setSetpoint,
         referenceValue,
         setReferenceValue,
       };
-    }, [enabled, referenceValue, setpoint, tuneEnabled, values]);
+    }, [enabled, referenceValue, setpoint, tuneEnabled, tuningResult, values]);
 
   return (
     <PidControlContext.Provider value={providerProps}>

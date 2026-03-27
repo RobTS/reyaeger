@@ -34,6 +34,14 @@ export const usePidControlTuneStatus = (): [
   return [context.tuneEnabled, context.setTuneEnabled];
 };
 
+export const usePidControlTuningResult = () => {
+  const context = useContext(PidControlContext);
+  if (context === undefined) {
+    throw new Error('useYaeger must be used within a YaegerConnectionProvider');
+  }
+  return context.tuningResult;
+};
+
 export const usePidControlValues = () => {
   const context = useContext(PidControlContext);
   if (context === undefined) {

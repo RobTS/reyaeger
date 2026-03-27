@@ -12,7 +12,6 @@ import { useYaegerLastMessage } from '../../hooks/useYaeger.ts';
 import { RoastingControls } from './controls.tsx';
 import { ProfileControls } from './profile.tsx';
 import { DateTime } from 'luxon';
-import { usePidControlTuneStatus } from '../../hooks/usePidControl.ts';
 
 const EtCard = () => {
   const lastMessage = useYaegerLastMessage();
@@ -32,7 +31,6 @@ export const HomeRoute: React.FC = () => {
   const { start, stop } = useRecorderCommands();
   const startDate = useRecorderStartDate();
   const recording = useRecorderStatus();
-  const [tuning, setTuning] = usePidControlTuneStatus();
 
   const duration = startDate
     ? DateTime.now().diff(startDate).toFormat('mm:ss')
@@ -59,18 +57,6 @@ export const HomeRoute: React.FC = () => {
             {duration ? duration : ''}
             <br />
             {recording ? 'Pause' : 'Record'}
-          </div>
-
-          <div
-            className={cx(
-              'rounded-2xl w-30 flex flex-col  justify-center text-center cursor-pointer font-bold text-white text-lg',
-              tuning ? 'bg-red-500' : 'bg-green-200',
-            )}
-            onClick={() => {
-              setTuning(!tuning);
-            }}
-          >
-            {tuning ? 'Tuning...' : 'Tune PID'}
           </div>
         </div>
         <div
