@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { NavLink } from 'react-router';
+import { ConnectionStatus } from '../ConnectionStatus.tsx';
 
 export const Layout: React.FC<{
   children: React.ReactNode | React.ReactNode[];
@@ -12,15 +13,13 @@ export const Layout: React.FC<{
         }
       >
         <div className={'font-bold text-lg mr-4'}>ReYaeger Frontend</div>
-        <div className={'text-lg'}>
+        <div className={'flex flex-row gap-4 text-lg flex-1'}>
           <NavLink
             to="/"
             className={({ isActive }) => (isActive ? 'text-blue-300' : '')}
           >
             Home
           </NavLink>
-        </div>
-        <div className={'text-lg'}>
           <NavLink
             to="/settings"
             className={({ isActive }) => (isActive ? 'text-blue-300' : '')}
@@ -28,6 +27,7 @@ export const Layout: React.FC<{
             Settings
           </NavLink>
         </div>
+        <ConnectionStatus />
       </div>
       <div className={'h-full p-4 flex flex-col items-center'}>
         <div className={'w-full max-w-300'}>{children}</div>

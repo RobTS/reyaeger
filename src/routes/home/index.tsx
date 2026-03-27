@@ -1,25 +1,26 @@
 import * as React from 'react';
 import { Layout } from '../../components/navigation/layout.tsx';
-import { LineChart } from '../../components/chart/LineChart.tsx';
 import { MetricsCard } from '../../components/cards/MetricsCard.tsx';
-import { useDummyWebsocket } from '../../hooks/useDummyWebsocket.ts';
-import { useRecorder } from '../../hooks/useRecorder.ts';
-import { useEffect } from 'react';
 import cx from 'classnames';
-export const HomeRoute: React.FC = () => {
-  const { lastMessage } = useDummyWebsocket({
-    host: `ws://${window.location.host}/ws`,
-  });
-  const { records, addRecord, recording, start, stop, startDate } =
-    useRecorder();
+import {
+  useRecorderCommands,
+  useRecorderStatus,
+} from '../../hooks/useRecorder.ts';
+import { RoastingLineChart } from './chart.tsx';
+import {
+  useYaegerLastMessage,
+  useYaegerSendCommand,
+} from '../../hooks/useYaeger.ts';
 
-  useEffect(() => {
-    if (lastMessage) addRecord(lastMessage);
-  }, [addRecord, lastMessage]);
+export const HomeRoute: React.FC = () => {
+  const lastMessage = useYaegerLastMessage();
+  const sendCommand = useYaegerSendCommand();
+  const { start, stop } = useRecorderCommands();
+  const recording = useRecorderStatus();
 
   return (
     <Layout>
-      <div className={'flex flex-col gap-4'}>
+      <div className={'flex flex-col gap-4 items-center'}>
         <div className={'flex flex-row flex-wrap gap-4 justify-center'}>
           <MetricsCard
             name={'ET'}
@@ -33,7 +34,7 @@ export const HomeRoute: React.FC = () => {
           />
           <div
             className={cx(
-              'rounded-2xl w-30 flex flex-col  justify-center text-center cursor-pointer',
+              'rounded-2xl w-30 flex flex-col  justify-center text-center cursor-pointer font-bold text-white text-lg',
               recording ? 'bg-red-500' : 'bg-green-500',
             )}
             onClick={() => {
@@ -44,10 +45,70 @@ export const HomeRoute: React.FC = () => {
               }
             }}
           >
-            Record
+            {recording ? 'Pause' : 'Record'}
           </div>
         </div>
-        <LineChart records={records} startDate={startDate} />
+        <div
+          className={
+            'border border-gray-300 p-2 rounded-2xl w-full aspect-auto'
+          }
+        >
+          <RoastingLineChart />
+        </div>
+        <div
+          className={
+            'flex flex-col gap-4 items-center w-full border border-gray-300 rounded-2xl p-4'
+          }
+        >
+          <div>Setpoint Control {lastMessage?.message.BurnerVal}</div>
+          <input
+            type="range"
+            className="range range-xl w-full max-w-200"
+            aria-label="range"
+            min={0}
+            max={250}
+            defaultValue={lastMessage?.message.BurnerVal}
+            onChange={(e) => {
+              sendCommand({ BurnerVal: e.target.valueAsNumber });
+            }}
+          />
+        </div>
+        <div
+          className={
+            'flex flex-col gap-4 items-center w-full border border-gray-300 rounded-2xl p-4'
+          }
+        >
+          <div>Fan Control {lastMessage?.message.FanVal}</div>
+          <input
+            type="range"
+            className="range range-xl w-full max-w-200"
+            aria-label="range"
+            min={0}
+            max={100}
+            defaultValue={lastMessage?.message.FanVal}
+            onChange={(e) => {
+              sendCommand({ FanVal: e.target.valueAsNumber });
+            }}
+          />
+        </div>
+        <div
+          className={
+            'flex flex-col gap-4 items-center w-full border border-gray-300 rounded-2xl p-4'
+          }
+        >
+          <div>Burner Control {lastMessage?.message.BurnerVal}</div>
+          <input
+            type="range"
+            className="range range-xl w-full max-w-200"
+            aria-label="range"
+            min={0}
+            max={100}
+            defaultValue={lastMessage?.message.BurnerVal}
+            onChange={(e) => {
+              sendCommand({ BurnerVal: e.target.valueAsNumber });
+            }}
+          />
+        </div>
       </div>
     </Layout>
   );

@@ -84,6 +84,7 @@ export const LineChart: React.FC<{
               display: true,
               text: 'Time',
             },
+            min: 0,
             ticks: {
               stepSize: 60,
               // eslint-disable-next-line
