@@ -10,8 +10,8 @@ import {
   Tooltip,
 } from 'chart.js';
 import annotationPlugin from 'chartjs-plugin-annotation';
-import type { YaegerMessage } from '../../api/types.ts';
 import { DateTime } from 'luxon';
+import type { YaegerMessageWrapper } from '../../types/connection.ts';
 
 Chart.register(
   LinearScale,
@@ -25,7 +25,7 @@ Chart.register(
 
 export const LineChart: React.FC<{
   startDate: DateTime | undefined;
-  records: { message: YaegerMessage; time: DateTime }[];
+  records: YaegerMessageWrapper[];
 }> = ({ records, startDate }) => {
   return (
     <Line

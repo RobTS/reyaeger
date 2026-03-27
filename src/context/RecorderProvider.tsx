@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { YaegerMessage } from '../api/types.ts';
 import { DateTime } from 'luxon';
 import {
   RecorderContext,
@@ -8,6 +7,7 @@ import {
 } from './RecorderContext.ts';
 import { last } from 'lodash-es';
 import { useYaegerLastMessage } from '../hooks/useYaeger.ts';
+import type { YaegerMessageWrapper } from '../types/connection.ts';
 
 type Props = {
   children: React.ReactNode;
@@ -15,12 +15,7 @@ type Props = {
 
 export const RecorderProvider: React.FC<Props> = ({ children }) => {
   const [recording, setRecording] = useState<boolean>(false);
-  const [records, setRecords] = useState<
-    {
-      message: YaegerMessage;
-      time: DateTime;
-    }[]
-  >([]);
+  const [records, setRecords] = useState<YaegerMessageWrapper[]>([]);
   const [startDate, setStartDate] = useState<DateTime | undefined>();
 
   const start = useCallback(() => {

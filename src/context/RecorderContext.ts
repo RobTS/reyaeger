@@ -1,9 +1,9 @@
 import { createContext } from 'react';
-import type { YaegerMessage } from '../api/types.ts';
 import { DateTime } from 'luxon';
+import type { YaegerMessageWrapper } from '../types/connection.ts';
 
 export type RecorderContextType = {
-  records: { message: YaegerMessage; time: DateTime }[];
+  records: YaegerMessageWrapper[];
   start: () => void;
   stop: () => void;
   clear: () => void;

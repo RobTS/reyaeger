@@ -7,16 +7,15 @@ import {
   useRecorderStatus,
 } from '../../hooks/useRecorder.ts';
 import { RoastingLineChart } from './chart.tsx';
-import {
-  useYaegerLastMessage,
-  useYaegerSendCommand,
-} from '../../hooks/useYaeger.ts';
+import { useYaegerLastMessage } from '../../hooks/useYaeger.ts';
+import { RoastingControls } from './controls.tsx';
+import { usePidControlTuneStatus } from '../../hooks/usePidControl.ts';
 
 export const HomeRoute: React.FC = () => {
   const lastMessage = useYaegerLastMessage();
-  const sendCommand = useYaegerSendCommand();
   const { start, stop } = useRecorderCommands();
   const recording = useRecorderStatus();
+  const [tuning, setTuning] = usePidControlTuneStatus();
 
   return (
     <Layout>
@@ -47,6 +46,17 @@ export const HomeRoute: React.FC = () => {
           >
             {recording ? 'Pause' : 'Record'}
           </div>
+          <div
+            className={cx(
+              'rounded-2xl w-30 flex flex-col  justify-center text-center cursor-pointer font-bold text-white text-lg',
+              recording ? 'bg-red-500' : 'bg-green-500',
+            )}
+            onClick={() => {
+              setTuning(!tuning);
+            }}
+          >
+            {tuning ? 'Tuning...' : 'Tune PID'}
+          </div>
         </div>
         <div
           className={
@@ -55,60 +65,7 @@ export const HomeRoute: React.FC = () => {
         >
           <RoastingLineChart />
         </div>
-        <div
-          className={
-            'flex flex-col gap-4 items-center w-full border border-gray-300 rounded-2xl p-4'
-          }
-        >
-          <div>Setpoint Control {lastMessage?.message.BurnerVal}</div>
-          <input
-            type="range"
-            className="range range-xl w-full max-w-200"
-            aria-label="range"
-            min={0}
-            max={250}
-            defaultValue={lastMessage?.message.BurnerVal}
-            onChange={(e) => {
-              sendCommand({ BurnerVal: e.target.valueAsNumber });
-            }}
-          />
-        </div>
-        <div
-          className={
-            'flex flex-col gap-4 items-center w-full border border-gray-300 rounded-2xl p-4'
-          }
-        >
-          <div>Fan Control {lastMessage?.message.FanVal}</div>
-          <input
-            type="range"
-            className="range range-xl w-full max-w-200"
-            aria-label="range"
-            min={0}
-            max={100}
-            defaultValue={lastMessage?.message.FanVal}
-            onChange={(e) => {
-              sendCommand({ FanVal: e.target.valueAsNumber });
-            }}
-          />
-        </div>
-        <div
-          className={
-            'flex flex-col gap-4 items-center w-full border border-gray-300 rounded-2xl p-4'
-          }
-        >
-          <div>Burner Control {lastMessage?.message.BurnerVal}</div>
-          <input
-            type="range"
-            className="range range-xl w-full max-w-200"
-            aria-label="range"
-            min={0}
-            max={100}
-            defaultValue={lastMessage?.message.BurnerVal}
-            onChange={(e) => {
-              sendCommand({ BurnerVal: e.target.valueAsNumber });
-            }}
-          />
-        </div>
+        <RoastingControls />
       </div>
     </Layout>
   );

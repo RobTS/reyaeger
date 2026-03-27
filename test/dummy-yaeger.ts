@@ -99,12 +99,14 @@ wss.on('connection', (ws: WebSocket) => {
       }
       ws.send(
         JSON.stringify({
-          ET: et,
-          BT: bt,
-          Amb: amb,
-          FanVal: lastSetting?.command.FanVal || 0,
-          BurnerVal: lastSetting?.command.BurnerVal || 0,
-          id: DateTime.now().toSeconds(),
+          data: {
+            ET: et,
+            BT: bt,
+            Amb: amb,
+            FanVal: lastSetting?.command.FanVal || 0,
+            BurnerVal: lastSetting?.command.BurnerVal || 0,
+            id: DateTime.now().toSeconds(),
+          },
         }),
       );
     } catch (e) {

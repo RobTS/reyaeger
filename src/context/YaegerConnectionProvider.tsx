@@ -5,8 +5,11 @@ import {
   type WsStatus,
   YaegerConnectionContext,
 } from './YaegerConnectionContext.ts';
-import type { YaegerMessage } from '../api/types.ts';
 import { DateTime } from 'luxon';
+import type {
+  YaegerMessage,
+  YaegerMessageWrapper,
+} from '../types/connection.ts';
 
 type Props = {
   host: string;
@@ -21,7 +24,7 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
   const [ws, setWs] = useState<WebSocket | undefined>();
   const [status, setStatus] = useState<WsStatus>('disconnected');
   const [lastMessage, setLastMessage] = useState<
-    { message: YaegerMessage; time: DateTime } | undefined
+    YaegerMessageWrapper | undefined
   >();
   const [error, setError] = useState<Error | undefined>();
   const commandsToSend = useRef<
@@ -41,7 +44,7 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
 
     websocket.onmessage = (event) => {
       try {
-        const message: YaegerMessage = JSON.parse(event.data);
+        const message: YaegerMessage = JSON.parse(event.data).data;
         if (message != undefined) {
           //console.log('Received message', message);
           setLastMessage({ time: DateTime.now(), message });
