@@ -8,7 +8,10 @@ import type { Profile } from '../types/profile.ts';
 import { ProfileProcessor } from '../common/profileProcessor.ts';
 import { DateTime } from 'luxon';
 import { usePidControlSetpoint } from '../hooks/usePidControl.ts';
-import { useYaegerSendCommand } from '../hooks/useYaeger.ts';
+import {
+  useYaegerLastMessage,
+  useYaegerSendCommand,
+} from '../hooks/useYaeger.ts';
 
 type Props = {
   children: React.ReactNode;
@@ -19,6 +22,7 @@ export const ProfileExecutionProvider: React.FC<Props> = ({ children }) => {
   const [startDate, setStartDate] = useState<DateTime | undefined>();
   const setSetpoint = usePidControlSetpoint()[1];
   const sendCommand = useYaegerSendCommand();
+  const lastMessage = useYaegerLastMessage();
 
   const profileProcessor = useMemo(
     () => profile && new ProfileProcessor(profile),
@@ -35,7 +39,7 @@ export const ProfileExecutionProvider: React.FC<Props> = ({ children }) => {
       if (config.fanValue !== undefined)
         sendCommand({ FanVal: config.fanValue });
     }
-  }, [profileProcessor, sendCommand, setSetpoint, startDate]);
+  }, [profileProcessor, sendCommand, setSetpoint, startDate, lastMessage]);
 
   const providerProps = useMemo((): ProfileExecutionContextType => {
     return {

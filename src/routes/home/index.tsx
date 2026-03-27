@@ -64,7 +64,7 @@ export const HomeRoute: React.FC = () => {
           <div
             className={cx(
               'rounded-2xl w-30 flex flex-col  justify-center text-center cursor-pointer font-bold text-white text-lg',
-              recording ? 'bg-red-500' : 'bg-green-500',
+              tuning ? 'bg-red-500' : 'bg-green-200',
             )}
             onClick={() => {
               setTuning(!tuning);

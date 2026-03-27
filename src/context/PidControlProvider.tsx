@@ -16,15 +16,15 @@ type Props = {
   children: React.ReactNode;
 };
 
-// Dummy:  kp: 0.4, ki: 0.05, kd: 0.002,
+// Dummy:   kp: 20.6860275711623,  ki: 0.2,  kd: 8,
 export const PidControlProvider: React.FC<Props> = ({ children }) => {
   const [setpoint, setSetpoint] = useState<number>(0);
   const [enabled, setEnabled] = useState(true);
   const [tuneEnabled, setTuneEnabled] = useState(false);
   const [values, setValues] = useState({
-    kp: 0.4,
-    ki: 0.05,
-    kd: 0.002,
+    kp: 21,
+    ki: 0.6,
+    kd: 18,
   });
   const [referenceValue, setReferenceValue] = useState<PidReference>('ET');
   const sendCommand = useYaegerSendCommand();
