@@ -30,7 +30,7 @@ export const RoastingControls: React.FC = () => {
   });
   useHotkeys('a', () => {
     if (pidEnabled) {
-      setSetpoint(Math.max(setpoint - 1, 250));
+      setSetpoint(Math.max(setpoint - 1, 0));
     } else {
       if (!lastMessage) return;
       sendCommand({
