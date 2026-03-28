@@ -7,7 +7,10 @@ import {
 import type { Profile } from '../types/profile.ts';
 import { ProfileProcessor } from '../common/profileProcessor.ts';
 import { DateTime } from 'luxon';
-import { usePidControlSetpoint } from '../hooks/usePidControl.ts';
+import {
+  usePidControlCommands,
+  usePidControlSetpoint,
+} from '../hooks/usePidControl.ts';
 import {
   useYaegerLastMessage,
   useYaegerSendCommand,
@@ -21,6 +24,7 @@ export const ProfileExecutionProvider: React.FC<Props> = ({ children }) => {
   const [profile, setProfile] = useState<Profile | undefined>(undefined);
   const [startDate, setStartDate] = useState<DateTime | undefined>();
   const setSetpoint = usePidControlSetpoint()[1];
+  const { reset } = usePidControlCommands();
   const sendCommand = useYaegerSendCommand();
   const lastMessage = useYaegerLastMessage();
 
@@ -45,11 +49,13 @@ export const ProfileExecutionProvider: React.FC<Props> = ({ children }) => {
     return {
       profile,
       setProfile,
-      setEnabled: (enabled) =>
-        setStartDate(enabled ? DateTime.now() : undefined),
+      setEnabled: (enabled) => {
+        setStartDate(enabled ? DateTime.now() : undefined);
+        reset();
+      },
       enabled: !!startDate,
     };
-  }, [startDate, profile]);
+  }, [profile, startDate, reset]);
 
   return (
     <ProfileExecutionContext.Provider value={providerProps}>

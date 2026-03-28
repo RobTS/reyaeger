@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   PidControlContext,
   type PidControlContextType,
@@ -17,7 +17,7 @@ type Props = {
 };
 
 // Dummy:  kp: 20, ki: 0.6, kd: 1,
-// OwnMachine:
+// OwnMachine:  kp: 1.5, ki: 0.012, kd: 12
 export const PidControlProvider: React.FC<Props> = ({ children }) => {
   const [setpoint, setSetpoint] = useState<number>(0);
   const [enabled, setEnabled] = useState(true);
@@ -43,8 +43,10 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
     if (!tuneEnabled) return;
     return new PidAutoTune({
       setPidEnabled: setEnabled,
-      setHeaterSetpoint: () => sendCommand({ BurnerVal: 100 }),
-      calibrationTemp: 180,
+      setHeaterPercentage: (temp) => sendCommand({ BurnerVal: temp }),
+      setFanSpeed: (fanVal) => sendCommand({ FanVal: fanVal }),
+      calibrationTemp: 140,
+      calibrationFanSpeed: 85,
     });
   }, [sendCommand, tuneEnabled]);
 
@@ -83,7 +85,6 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
     pidTune.temperatureUpdate(
       lastMessage.time,
       lastMessage.message.ET,
-      setpoint,
     );
     const result = pidTune.checkForCompletion();
     if (!result) return;
@@ -98,6 +99,10 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
     sendCommand({ BurnerVal: 0 });
   }, [enabled, sendCommand]);
 
+  const resetPid = useCallback(() => {
+    controller?.reset();
+  }, [controller]);
+
   const providerProps =
     useMemo<PidControlContextType>((): PidControlContextType => {
       return {
@@ -107,13 +112,22 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
         setValues,
         tuneEnabled,
         setTuneEnabled,
+        resetPid,
         tuningResult,
         setpoint,
         setSetpoint,
         referenceValue,
         setReferenceValue,
       };
-    }, [enabled, referenceValue, setpoint, tuneEnabled, tuningResult, values]);
+    }, [
+      enabled,
+      referenceValue,
+      resetPid,
+      setpoint,
+      tuneEnabled,
+      tuningResult,
+      values,
+    ]);
 
   return (
     <PidControlContext.Provider value={providerProps}>

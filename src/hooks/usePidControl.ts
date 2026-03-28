@@ -23,6 +23,14 @@ export const usePidControlStatus = (): [
   return [context.enabled, context.setEnabled];
 };
 
+export const usePidControlCommands = () => {
+  const context = useContext(PidControlContext);
+  if (context === undefined) {
+    throw new Error('useYaeger must be used within a YaegerConnectionProvider');
+  }
+  return { reset: context.resetPid };
+};
+
 export const usePidControlTuneStatus = (): [
   boolean,
   (enabled: boolean) => void,

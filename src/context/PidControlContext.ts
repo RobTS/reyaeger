@@ -5,6 +5,7 @@ export type PidControlContextType = {
   values: PidData;
   setValues: (values: PidData) => void;
   enabled: boolean;
+  resetPid: () => void;
   setEnabled: (enabled: boolean) => void;
   tuneEnabled: boolean;
   setTuneEnabled: (enabled: boolean) => void;
@@ -20,6 +21,7 @@ export const PidControlContext = createContext<PidControlContextType>({
   setValues: () => {},
   enabled: false,
   setEnabled: () => {},
+  resetPid: () => {},
   tuneEnabled: false,
   tuningResult: undefined,
   setTuneEnabled: () => {},

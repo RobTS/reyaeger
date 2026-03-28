@@ -1,16 +1,17 @@
 import { DateTime } from 'luxon';
 import type { PidData } from '../types/pid.ts';
 
-const TUNE_PID_DELTA = 5.0;
 
 /**
  * Simplified conversion of Klipper's Autotune mechanism
  */
 export class PidAutoTune {
-  private setHeaterSetpoint: (value: number) => void;
+  private setHeaterPercentage: (value: number) => void;
   private setPidEnabled: (value: boolean) => void;
+  private setFanSpeed: (value: number) => void;
   private heaterMaxPower: number = 1;
   private calibrationTemp: number;
+  private calibrationFanSpeed: number;
 
   // Heating control
   private heating: boolean = false;
@@ -20,31 +21,39 @@ export class PidAutoTune {
   private peaks: { time: DateTime; temp: number }[] = [];
 
   constructor(params: {
-    setHeaterSetpoint: (value: number) => void;
+    setHeaterPercentage: (value: number) => void;
     setPidEnabled: (value: boolean) => void;
     calibrationTemp: number;
+    calibrationFanSpeed: number;
+    setFanSpeed: (value: number) => void;
   }) {
-    this.setHeaterSetpoint = params.setHeaterSetpoint;
+    this.setHeaterPercentage = params.setHeaterPercentage;
     this.setPidEnabled = params.setPidEnabled;
     this.calibrationTemp = params.calibrationTemp;
+    this.calibrationFanSpeed = params.calibrationFanSpeed;
+    this.setFanSpeed = params.setFanSpeed;
   }
 
   checkForCompletion(): PidData | undefined {
     if (this.peaks.length <= 20) return;
-    return this.calcFinalPid();
+    const result = this.calcFinalPid();
+    this.setHeaterPercentage(0);
+    //this.setFanSpeed(0);
+    return result;
   }
 
-  public temperatureUpdate(time: DateTime, temp: number, targetTemp: number) {
+  public temperatureUpdate(time: DateTime, temp: number) {
     // Check if the temperature has crossed the target and
     // enable/disable the heater if so.
-    if (this.heating && temp >= targetTemp) {
+    this.setFanSpeed(this.calibrationFanSpeed);
+    if (this.heating && temp >= this.calibrationTemp) {
       this.heating = false;
       this.checkPeaks();
-      this.setHeaterSetpoint(this.calibrationTemp - TUNE_PID_DELTA);
-    } else if (!this.heating && temp <= targetTemp) {
+      this.setHeaterPercentage(0);
+    } else if (!this.heating && temp <= this.calibrationTemp) {
       this.heating = true;
       this.checkPeaks();
-      this.setHeaterSetpoint(this.calibrationTemp);
+      this.setHeaterPercentage(100);
     }
 
     // Check if this temperature is a peak and record it if so
