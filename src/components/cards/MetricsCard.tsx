@@ -3,7 +3,7 @@ import * as React from 'react';
 export const MetricsCard: React.FC<{
   name: string;
   unit: string;
-  value: number;
+  value: string;
 }> = ({ name, unit, value }) => {
   return (
     <div
@@ -12,7 +12,7 @@ export const MetricsCard: React.FC<{
       }
     >
       <div className={'text-gray-500'}>{name}</div>
-      <div className={'text-3xl'}>{value.toFixed(1)}</div>
+      <div className={'text-3xl'}>{value}</div>
       <div className={'text-gray-500'}>{unit}</div>
     </div>
   );

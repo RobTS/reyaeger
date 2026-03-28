@@ -1,6 +1,7 @@
 import * as React from 'react';
 import Dropzone from 'react-dropzone';
 import {
+  useProfileExecutionCommands,
   useProfileExecutionEnabled,
   useProfileExecutionProfile,
 } from '../../hooks/useProfileExecution.ts';
@@ -8,8 +9,11 @@ import { useRecorderCommands } from '../../hooks/useRecorder.ts';
 
 export const ProfileControls: React.FC = () => {
   const [profile, setProfile] = useProfileExecutionProfile();
-  const [enabled, setEnabled] = useProfileExecutionEnabled();
-  const { start } = useRecorderCommands();
+  const enabled = useProfileExecutionEnabled();
+  const { start: startProfile, stop: stopProfile } =
+    useProfileExecutionCommands();
+
+  const { start: startRecorder } = useRecorderCommands();
   return (
     <div
       className={
@@ -18,6 +22,56 @@ export const ProfileControls: React.FC = () => {
     >
       <h2>Profile</h2>
 
+      {profile ? (
+        <div className={'flex flex-col gap-2 items-center'}>
+          <div className={'text-center'}>
+            Duration:{' '}
+            {profile.steps.reduce((acc, step) => {
+              acc += step.duration;
+              return acc;
+            }, 0)}
+          </div>
+          <div className={'flex flex-row gap-2'}>
+            <button
+              className={
+                'block h-10 bg-blue-200 px-4 rounded-2xl cursor-pointer'
+              }
+              onClick={() => {
+                if (enabled) {
+                  stopProfile();
+                } else {
+                  startProfile();
+                  startRecorder();
+                }
+              }}
+            >
+              {enabled ? 'Stop' : 'Start'}
+            </button>
+            <button
+              className={
+                'block h-10 bg-gray-200 px-4 rounded-2xl cursor-pointer'
+              }
+              onClick={() => setProfile(undefined)}
+            >
+              Clear
+            </button>
+          </div>
+          <div className={'flex flex-row gap-2'}>
+            {enabled ? (
+              <button
+                className={
+                  'block h-10 bg-blue-200 px-4 rounded-2xl cursor-pointer'
+                }
+                onClick={() => {
+                  stopProfile(true);
+                }}
+              >
+                Cooldown
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
       {!profile ? (
         <Dropzone
           onDrop={(acceptedFiles) => {
@@ -52,40 +106,7 @@ export const ProfileControls: React.FC = () => {
             </div>
           )}
         </Dropzone>
-      ) : (
-        <div className={'flex flex-col gap-2'}>
-          <div className={'text-center'}>
-            Duration:{' '}
-            {profile.steps.reduce((acc, step) => {
-              acc += step.duration;
-              return acc;
-            }, 0)}
-          </div>
-          <div className={'flex flex-row gap-2'}>
-            <button
-              className={
-                'block h-10 bg-blue-200 px-4 rounded-2xl cursor-pointer'
-              }
-              onClick={() => {
-                setEnabled(!enabled);
-                if (!enabled) {
-                  start();
-                }
-              }}
-            >
-              {enabled ? 'Stop' : 'Start'}
-            </button>
-            <button
-              className={
-                'block h-10 bg-gray-200 px-4 rounded-2xl cursor-pointer'
-              }
-              onClick={() => setProfile(undefined)}
-            >
-              Clear
-            </button>
-          </div>
-        </div>
-      )}
+      ) : null}
     </div>
   );
 };

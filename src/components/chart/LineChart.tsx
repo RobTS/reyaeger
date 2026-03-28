@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useMemo } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart,
@@ -10,9 +11,7 @@ import {
   Tooltip,
 } from 'chart.js';
 import annotationPlugin from 'chartjs-plugin-annotation';
-import { DateTime } from 'luxon';
 import type { YaegerMessageWrapper } from '../../types/connection.ts';
-import { useMemo } from 'react';
 
 Chart.register(
   LinearScale,
@@ -41,12 +40,12 @@ const applyRollingAverage = (values: (number | null)[], size: number) => {
   });
 };
 
-const windowSize = 30;
+const windowSize = 30 * 5;
 
 export const LineChart: React.FC<{
-  startDate: DateTime | undefined;
   records: YaegerMessageWrapper[];
-}> = ({ records, startDate }) => {
+}> = ({ records }) => {
+  const startDate = records[0]?.time;
   // Calculate RoR and apply rolling averages
   const { beanTemps, envTemps, timestamps, setpoints, btRor, etRor } =
     useMemo(() => {
@@ -111,7 +110,7 @@ export const LineChart: React.FC<{
               label1: {
                 type: 'label',
                 xValue: 2,
-                yValue: 0,
+                yValue: 2,
                 content: ['Event'],
                 font: {
                   size: 14,

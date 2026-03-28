@@ -2,17 +2,27 @@ import { useContext } from 'react';
 import { ProfileExecutionContext } from '../context/ProfileExecutionContext.ts';
 import type { Profile } from '../types/profile.ts';
 
-export const useProfileExecutionEnabled = (): [
-  boolean,
-  (enabled: boolean) => void,
-] => {
+export const useProfileExecutionEnabled = () => {
   const context = useContext(ProfileExecutionContext);
   if (context === undefined) {
     throw new Error(
       'useProfileExecution must be used within a ProfileExecutionProvider',
     );
   }
-  return [context.enabled, context.setEnabled];
+  return context.enabled;
+};
+
+export const useProfileExecutionCommands = () => {
+  const context = useContext(ProfileExecutionContext);
+  if (context === undefined) {
+    throw new Error(
+      'useProfileExecution must be used within a ProfileExecutionProvider',
+    );
+  }
+  return {
+    start: context.start,
+    stop: context.stop,
+  };
 };
 
 export const useProfileExecutionProfile = (): [

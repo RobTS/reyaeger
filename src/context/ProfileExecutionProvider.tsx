@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ProfileExecutionContext,
   type ProfileExecutionContextType,
@@ -45,17 +45,30 @@ export const ProfileExecutionProvider: React.FC<Props> = ({ children }) => {
     }
   }, [profileProcessor, sendCommand, setSetpoint, startDate, lastMessage]);
 
+  const start = useCallback(() => {
+    setStartDate(DateTime.now());
+    reset();
+  }, [reset]);
+  const stop = useCallback(
+    (cooldown?: boolean) => {
+      setStartDate(undefined);
+      if (cooldown) {
+        setSetpoint(0);
+        sendCommand({ FanVal: 65 });
+      }
+    },
+    [sendCommand, setSetpoint],
+  );
+
   const providerProps = useMemo((): ProfileExecutionContextType => {
     return {
       profile,
       setProfile,
-      setEnabled: (enabled) => {
-        setStartDate(enabled ? DateTime.now() : undefined);
-        reset();
-      },
+      start,
+      stop,
       enabled: !!startDate,
     };
-  }, [profile, startDate, reset]);
+  }, [profile, start, stop, startDate]);
 
   return (
     <ProfileExecutionContext.Provider value={providerProps}>

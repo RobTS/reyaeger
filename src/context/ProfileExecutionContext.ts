@@ -5,7 +5,8 @@ export type ProfileExecutionContextType = {
   profile: Profile | undefined;
   setProfile: (profile: Profile | undefined) => void;
   enabled: boolean;
-  setEnabled: (enabled: boolean) => void;
+  start: () => void;
+  stop: (cooldown?: boolean) => void;
 };
 
 export const ProfileExecutionContext =
@@ -13,5 +14,6 @@ export const ProfileExecutionContext =
     profile: undefined,
     setProfile: () => {},
     enabled: false,
-    setEnabled: () => {},
+    start: () => {},
+    stop: () => {},
   });
