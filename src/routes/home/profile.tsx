@@ -10,7 +10,7 @@ import {
   useRecorderEvents,
   useRecorderRecords,
 } from '../../hooks/useRecorder.ts';
-import { DateTime } from 'luxon';
+import { DateTime, Duration } from 'luxon';
 import { Button } from '../../components/button/button.tsx';
 
 const DownloadButton = () => {
@@ -72,10 +72,12 @@ export const ProfileControls: React.FC = () => {
         <div className={'flex flex-col gap-2 items-center'}>
           <div className={'text-center'}>
             Duration:{' '}
-            {profile.steps.reduce((acc, step) => {
-              acc += step.duration;
-              return acc;
-            }, 0)}
+            {Duration.fromDurationLike({
+              seconds: profile.steps.reduce((acc, step) => {
+                acc += step.duration;
+                return acc;
+              }, 0),
+            }).toFormat('mm:ss')}
           </div>
           <div className={'flex flex-row gap-2'}>
             <Button

@@ -90,6 +90,7 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
     if (!result) return;
     console.log('Final result', result);
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTuningResult(result);
     setTuneEnabled(false);
   }, [lastMessage, pidTune, setpoint]);

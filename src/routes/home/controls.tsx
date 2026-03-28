@@ -4,15 +4,18 @@ import {
   useYaegerSendCommand,
 } from '../../hooks/useYaeger.ts';
 import {
+  usePidControlReferenceValue,
   usePidControlSetpoint,
   usePidControlStatus,
 } from '../../hooks/usePidControl.ts';
+import { Button } from '../../components/button/button.tsx';
 
 export const RoastingControls: React.FC = () => {
   const lastMessage = useYaegerLastMessage();
   const sendCommand = useYaegerSendCommand();
   const [setpoint, setSetpoint] = usePidControlSetpoint();
   const [pidEnabled, setPidEnabled] = usePidControlStatus();
+  const [pidReference, setPidReference] = usePidControlReferenceValue();
   return (
     <div className={'flex flex-col gap-4 flex-1'}>
       <div
@@ -48,17 +51,42 @@ export const RoastingControls: React.FC = () => {
             Heater Control - {lastMessage?.message.BurnerVal.toFixed(1)} %
           </div>
         )}
-        <div className={'flex flex-row gap-2'}>
-          <label className="flex items-center cursor-pointer relative">
-            <input
-              type="checkbox"
-              checked={pidEnabled}
-              onChange={() => setPidEnabled(!pidEnabled)}
-              className="peer h-5 w-5 cursor-pointer transition-all rounded shadow hover:shadow-md border border-slate-300 checked:bg-blue-600 checked:border-blue-600"
-              id="check1"
-            />
-          </label>
-          Use PID
+        <div className={'flex flex-row gap-4 items-center'}>
+          <div className={'flex flex-row gap-2 '}>
+            <label className="flex items-center cursor-pointer relative">
+              <input
+                type="checkbox"
+                checked={pidEnabled}
+                onChange={() => setPidEnabled(!pidEnabled)}
+                className="peer h-5 w-5 cursor-pointer transition-all rounded shadow hover:shadow-md border border-slate-300 checked:bg-blue-600 checked:border-blue-600"
+                id="check1"
+              />
+            </label>
+            Use PID
+          </div>
+          <div className={'flex flex-row'}>
+            <Button
+              onClick={() => setPidReference('BT')}
+              type={pidReference === 'BT' ? 'primary' : 'default'}
+              className={'rounded-r-none'}
+            >
+              BT
+            </Button>
+            <Button
+              onClick={() => setPidReference('ET')}
+              type={pidReference === 'ET' ? 'primary' : 'default'}
+              className={'rounded-none'}
+            >
+              ET
+            </Button>
+            <Button
+              onClick={() => setPidReference('MAX')}
+              type={pidReference === 'MAX' ? 'primary' : 'default'}
+              className={'rounded-l-none'}
+            >
+              MAX
+            </Button>
+          </div>
         </div>
 
         {pidEnabled ? (
