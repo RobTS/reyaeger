@@ -63,6 +63,44 @@ export const ProfileControls: React.FC = () => {
     useProfileExecutionCommands();
 
   const { start: startRecorder, addEvent } = useRecorderCommands();
+
+  if (!profile) {
+    return (
+      <Dropzone
+        onDrop={(acceptedFiles) => {
+          const file = acceptedFiles[0];
+          if (!file) {
+            return;
+          }
+          const reader = new FileReader();
+
+          reader.onload = (e) => {
+            try {
+              const jsonData = JSON.parse(e.target?.result as string);
+              setProfile(jsonData);
+            } catch (error) {
+              console.log('upload failed:', error);
+            }
+          };
+          reader.readAsText(file);
+        }}
+      >
+        {({ getRootProps, getInputProps }) => (
+          <div
+            {...getRootProps()}
+            className={
+              'flex flex-col flex-1 border-2 border-dashed border-gray-300 w-full rounded-2xl p-4 items-center justify-center'
+            }
+          >
+            <input {...getInputProps()} />
+            <div className={'text-center'}>
+              Drop a profile here, or click to select a file
+            </div>
+          </div>
+        )}
+      </Dropzone>
+    );
+  }
   return (
     <div
       className={
@@ -77,12 +115,11 @@ export const ProfileControls: React.FC = () => {
           <FontAwesomeIcon icon={faXmark} size="lg" />
         </div>
       ) : null}
-      <h2>Profile</h2>
 
       {profile ? (
         <div className={'flex flex-col gap-2 items-center'}>
           <div className={'text-center'}>
-            Duration:{' '}
+            Profile Duration:{' '}
             {Duration.fromDurationLike({
               seconds: profile.steps.reduce((acc, step) => {
                 acc += step.duration;
@@ -121,7 +158,7 @@ export const ProfileControls: React.FC = () => {
           <div>Events</div>
           <div className={'flex flex-row flex-wrap gap-2 justify-center'}>
             <Button
-              className={'w-50'}
+              className={'w-30 h-16'}
               onClick={() => {
                 addEvent({ label: 'Charge', time: DateTime.now() });
               }}
@@ -129,7 +166,7 @@ export const ProfileControls: React.FC = () => {
               Charge
             </Button>
             <Button
-              className={'w-50'}
+              className={'w-30 h-16'}
               onClick={() => {
                 addEvent({ label: 'Dry End', time: DateTime.now() });
               }}
@@ -137,7 +174,7 @@ export const ProfileControls: React.FC = () => {
               Dry End
             </Button>
             <Button
-              className={'w-50'}
+              className={'w-30 h-16'}
               onClick={() => {
                 addEvent({ label: '1. Crack Start', time: DateTime.now() });
               }}
@@ -145,7 +182,7 @@ export const ProfileControls: React.FC = () => {
               1. Crack Start
             </Button>
             <Button
-              className={'w-50'}
+              className={'w-30 h-16'}
               onClick={() => {
                 addEvent({ label: '1. Crack End', time: DateTime.now() });
               }}
@@ -153,7 +190,7 @@ export const ProfileControls: React.FC = () => {
               1. Crack End
             </Button>
             <Button
-              className={'w-50'}
+              className={'w-30 h-16'}
               onClick={() => {
                 addEvent({ label: '2. Crack Start', time: DateTime.now() });
               }}
@@ -161,7 +198,7 @@ export const ProfileControls: React.FC = () => {
               2. Crack Start
             </Button>
             <Button
-              className={'w-50'}
+              className={'w-30 h-16'}
               onClick={() => {
                 addEvent({ label: '2. Crack End', time: DateTime.now() });
               }}
@@ -169,7 +206,7 @@ export const ProfileControls: React.FC = () => {
               2. Crack End
             </Button>
             <Button
-              className={'w-50'}
+              className={'w-30 h-16'}
               onClick={() => {
                 addEvent({ label: 'Drop', time: DateTime.now() });
               }}
@@ -178,41 +215,6 @@ export const ProfileControls: React.FC = () => {
             </Button>
           </div>
         </div>
-      ) : null}
-      {!profile ? (
-        <Dropzone
-          onDrop={(acceptedFiles) => {
-            const file = acceptedFiles[0];
-            if (!file) {
-              return;
-            }
-            const reader = new FileReader();
-
-            reader.onload = (e) => {
-              try {
-                const jsonData = JSON.parse(e.target?.result as string);
-                setProfile(jsonData);
-              } catch (error) {
-                console.log('upload failed:', error);
-              }
-            };
-            reader.readAsText(file);
-          }}
-        >
-          {({ getRootProps, getInputProps }) => (
-            <div
-              {...getRootProps()}
-              className={
-                'flex flex-col flex-1 border-2 border-dashed border-gray-300 h-20 w-full rounded-2xl p-4 items-center justify-center'
-              }
-            >
-              <input {...getInputProps()} />
-              <div className={'text-center'}>
-                Drop a profile here, or click to select a file
-              </div>
-            </div>
-          )}
-        </Dropzone>
       ) : null}
     </div>
   );

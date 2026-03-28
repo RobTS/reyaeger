@@ -57,7 +57,7 @@ export const HomeRoute: React.FC = () => {
             />
           </div>
         </div>
-        <div className={'flex flex-row gap-4 w-full'}>
+        <div className={'flex flex-row gap-4 w-full items-stretch'}>
           <ProfileControls />
           <RoastingControls />
         </div>
