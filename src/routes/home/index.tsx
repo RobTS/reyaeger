@@ -38,22 +38,24 @@ export const HomeRoute: React.FC = () => {
 
   return (
     <Layout>
-      <div className={'flex flex-col gap-4 items-center'}>
-        <div
-          className={
-            'border border-gray-300 p-2 rounded-2xl w-full aspect-auto'
-          }
-        >
-          <RoastingLineChart />
-        </div>
-        <div className={'flex flex-row flex-wrap gap-4 justify-center'}>
-          <EtCard />
-          <BtCard />
-          <MetricsCard
-            name={''}
-            unit={''}
-            value={duration ? duration : '00:00'}
-          />
+      <div className={'flex flex-col gap-4'}>
+        <div className={'flex flex-row gap-4'}>
+          <div
+            className={
+              'border border-gray-300 p-2 rounded-2xl w-full aspect-auto'
+            }
+          >
+            <RoastingLineChart />
+          </div>
+          <div className={'flex flex-col flex-wrap gap-4 justify-between'}>
+            <EtCard />
+            <BtCard />
+            <MetricsCard
+              name={''}
+              unit={''}
+              value={duration ? duration : '00:00'}
+            />
+          </div>
         </div>
         <div className={'flex flex-row gap-4 w-full'}>
           <ProfileControls />

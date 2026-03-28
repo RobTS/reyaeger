@@ -9,6 +9,7 @@ import {
   usePidControlStatus,
 } from '../../hooks/usePidControl.ts';
 import { Button } from '../../components/button/button.tsx';
+import { useHotkeys } from 'react-hotkeys-hook';
 
 export const RoastingControls: React.FC = () => {
   const lastMessage = useYaegerLastMessage();
@@ -16,6 +17,40 @@ export const RoastingControls: React.FC = () => {
   const [setpoint, setSetpoint] = usePidControlSetpoint();
   const [pidEnabled, setPidEnabled] = usePidControlStatus();
   const [pidReference, setPidReference] = usePidControlReferenceValue();
+
+  useHotkeys('d', () => {
+    if (pidEnabled) {
+      setSetpoint(Math.min(setpoint + 1, 250));
+    } else {
+      if (!lastMessage) return;
+      sendCommand({
+        BurnerVal: Math.min(lastMessage.message.BurnerVal + 1, 100),
+      });
+    }
+  });
+  useHotkeys('a', () => {
+    if (pidEnabled) {
+      setSetpoint(Math.max(setpoint - 1, 250));
+    } else {
+      if (!lastMessage) return;
+      sendCommand({
+        BurnerVal: Math.max(lastMessage.message.BurnerVal - 1, 0),
+      });
+    }
+  });
+  useHotkeys('w', () => {
+    if (!lastMessage) return;
+    sendCommand({
+      FanVal: Math.min(lastMessage.message.FanVal + 1, 100),
+    });
+  });
+  useHotkeys('s', () => {
+    if (!lastMessage) return;
+    sendCommand({
+      FanVal: Math.max(lastMessage.message.FanVal - 1, 0),
+    });
+  });
+
   return (
     <div className={'flex flex-col gap-4 flex-1'}>
       <div

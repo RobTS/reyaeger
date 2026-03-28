@@ -1,5 +1,6 @@
 // WebSocket message type
 import type { DateTime } from 'luxon';
+import type { PidData } from './pid.ts';
 
 export type YaegerMessage = {
   ET: number;
@@ -12,7 +13,7 @@ export type YaegerMessage = {
 
 export type YaegerMessageWrapper = {
   message: YaegerMessage;
-  extras?: { setpoint?: number };
+  extra?: { setpoint?: number; pidData?: PidData };
   time: DateTime;
 };
 

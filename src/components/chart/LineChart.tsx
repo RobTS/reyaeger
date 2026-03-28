@@ -63,7 +63,7 @@ export const LineChart: React.FC<{
         beanTemps.push(r.message.BT);
         envTemps.push(r.message.ET);
         timestamps.push(startDate ? r.time.diff(startDate).as('seconds') : 0);
-        setpoints.push(r.extras?.setpoint || 0);
+        setpoints.push(r.extra?.setpoint || 0);
       });
       const btRor = applyRollingAverage(
         calculateRoR(beanTemps, timestamps),
