@@ -17,7 +17,6 @@ import type {
   RoastEvent,
   YaegerMessageWrapper,
 } from '../../types/connection.ts';
-import * as events from 'node:events';
 
 Chart.register(
   LinearScale,
