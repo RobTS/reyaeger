@@ -12,14 +12,17 @@ import {
 } from '../../hooks/useRecorder.ts';
 import { DateTime, Duration } from 'luxon';
 import { Button } from '../../components/button/button.tsx';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faXmark } from '@fortawesome/free-solid-svg-icons';
 
-const DownloadButton = () => {
+const DownloadButton: React.FC<{ className?: string }> = ({ className }) => {
   const records = useRecorderRecords();
   const events = useRecorderEvents();
   const [profile] = useProfileExecutionProfile();
 
   return (
     <Button
+      className={className}
       onClick={() => {
         console.log('download');
         const blob = new Blob(
@@ -63,9 +66,17 @@ export const ProfileControls: React.FC = () => {
   return (
     <div
       className={
-        'flex flex-col flex-1 gap-4 items-center w-full border border-gray-300 rounded-2xl p-4'
+        'flex flex-col flex-1 gap-4 items-center w-full border border-gray-300 rounded-2xl p-4 relative'
       }
     >
+      {profile ? (
+        <div
+          className={'absolute top-2 right-2 cursor-pointer'}
+          onClick={() => setProfile(undefined)}
+        >
+          <FontAwesomeIcon icon={faXmark} size="lg" />
+        </div>
+      ) : null}
       <h2>Profile</h2>
 
       {profile ? (
@@ -82,6 +93,7 @@ export const ProfileControls: React.FC = () => {
           <div className={'flex flex-row gap-2'}>
             <Button
               type={'primary'}
+              className={'w-30'}
               onClick={() => {
                 if (enabled) {
                   stopProfile();
@@ -93,27 +105,23 @@ export const ProfileControls: React.FC = () => {
             >
               {enabled ? 'Stop' : 'Start'}
             </Button>
-            <Button onClick={() => setProfile(undefined)}>Clear</Button>
-            <DownloadButton />
-          </div>
-          <div className={'flex flex-row gap-2'}>
             {enabled ? (
-              <button
-                className={
-                  'block h-10 bg-blue-200 px-4 rounded-2xl cursor-pointer'
-                }
+              <Button
+                className={'bg-blue-200! w-30'}
                 onClick={() => {
                   stopProfile(true);
                   addEvent({ label: 'Cooldown', time: DateTime.now() });
                 }}
               >
                 Cooldown
-              </button>
+              </Button>
             ) : null}
+            <DownloadButton className={'w-30'} />
           </div>
           <div>Events</div>
           <div className={'flex flex-row flex-wrap gap-2 justify-center'}>
             <Button
+              className={'w-50'}
               onClick={() => {
                 addEvent({ label: 'Charge', time: DateTime.now() });
               }}
@@ -121,6 +129,7 @@ export const ProfileControls: React.FC = () => {
               Charge
             </Button>
             <Button
+              className={'w-50'}
               onClick={() => {
                 addEvent({ label: 'Dry End', time: DateTime.now() });
               }}
@@ -128,6 +137,7 @@ export const ProfileControls: React.FC = () => {
               Dry End
             </Button>
             <Button
+              className={'w-50'}
               onClick={() => {
                 addEvent({ label: '1. Crack Start', time: DateTime.now() });
               }}
@@ -135,6 +145,7 @@ export const ProfileControls: React.FC = () => {
               1. Crack Start
             </Button>
             <Button
+              className={'w-50'}
               onClick={() => {
                 addEvent({ label: '1. Crack End', time: DateTime.now() });
               }}
@@ -142,6 +153,7 @@ export const ProfileControls: React.FC = () => {
               1. Crack End
             </Button>
             <Button
+              className={'w-50'}
               onClick={() => {
                 addEvent({ label: '2. Crack Start', time: DateTime.now() });
               }}
@@ -149,6 +161,7 @@ export const ProfileControls: React.FC = () => {
               2. Crack Start
             </Button>
             <Button
+              className={'w-50'}
               onClick={() => {
                 addEvent({ label: '2. Crack End', time: DateTime.now() });
               }}
@@ -156,6 +169,7 @@ export const ProfileControls: React.FC = () => {
               2. Crack End
             </Button>
             <Button
+              className={'w-50'}
               onClick={() => {
                 addEvent({ label: 'Drop', time: DateTime.now() });
               }}
