@@ -35,11 +35,8 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
   const [referenceValue, setReferenceValue] = useState<PidReference>('ET');
   const sendCommand = useYaegerSendCommand();
   const lastMessage = useYaegerLastMessage();
-  const hasSetpoint = !!setpoint;
-  const controller = useMemo(
-    () => (hasSetpoint ? new PidController(values) : undefined),
-    [hasSetpoint, values],
-  );
+
+  const controller = useMemo(() => new PidController(values), [values]);
 
   const pidTune = useMemo(() => {
     if (!tuneEnabled) return;
@@ -57,6 +54,10 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
     if (pidTune) return;
     if (!controller) return;
     if (!lastMessage) return;
+    if (setpoint === 0) {
+      sendCommand({ BurnerVal: 0 });
+      return;
+    }
     const bt = lastMessage.message.BT;
     const et = lastMessage.message.ET;
 
@@ -88,7 +89,7 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
     const result = pidTune.checkForCompletion();
     if (!result) return;
     console.log('Final result', result);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+
     setTuningResult(result);
     setTuneEnabled(false);
   }, [lastMessage, pidTune, setpoint]);

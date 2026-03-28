@@ -10,6 +10,7 @@ export const useRecorderCommands = () => {
     stop: context.stop,
     start: context.start,
     clear: context.clear,
+    addEvent: context.addEvent,
   };
 };
 
@@ -19,6 +20,14 @@ export const useRecorderRecords = () => {
     throw new Error('useYaeger must be used within a YaegerRecorderProvider');
   }
   return context.records;
+};
+
+export const useRecorderEvents = () => {
+  const context = useContext(RecorderContext);
+  if (context === undefined) {
+    throw new Error('useYaeger must be used within a YaegerRecorderProvider');
+  }
+  return context.events;
 };
 
 export const useRecorderStatus = () => {

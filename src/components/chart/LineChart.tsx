@@ -10,8 +10,14 @@ import {
   Title,
   Tooltip,
 } from 'chart.js';
-import annotationPlugin from 'chartjs-plugin-annotation';
-import type { YaegerMessageWrapper } from '../../types/connection.ts';
+import annotationPlugin, {
+  type AnnotationOptions,
+} from 'chartjs-plugin-annotation';
+import type {
+  RoastEvent,
+  YaegerMessageWrapper,
+} from '../../types/connection.ts';
+import * as events from 'node:events';
 
 Chart.register(
   LinearScale,
@@ -44,7 +50,8 @@ const windowSize = 30 * 5;
 
 export const LineChart: React.FC<{
   records: YaegerMessageWrapper[];
-}> = ({ records }) => {
+  events: RoastEvent[];
+}> = ({ records, events }) => {
   const startDate = records[0]?.time;
   // Calculate RoR and apply rolling averages
   const { beanTemps, envTemps, timestamps, setpoints, btRor, etRor } =
@@ -99,29 +106,33 @@ export const LineChart: React.FC<{
             },
           },
           annotation: {
-            annotations: {
-              line1: {
-                type: 'line',
-                xMin: 2,
-                xMax: 2,
-                borderColor: 'rgb(255, 99, 132)',
-                borderWidth: 2,
-              },
-              label1: {
-                type: 'label',
-                xValue: 2,
-                yValue: 2,
-                content: ['Event'],
-                font: {
-                  size: 14,
-                },
-                color: 'rgb(255, 99, 132)',
-                xAdjust: 0,
-                yAdjust: -24,
-                textAlign: 'start',
-                position: '0%',
-              },
-            },
+            annotations: [
+              ...events.map((e): AnnotationOptions => {
+                return {
+                  type: 'line',
+                  xMin: startDate ? e.time.diff(startDate).as('seconds') : 0,
+                  xMax: startDate ? e.time.diff(startDate).as('seconds') : 0,
+                  borderColor: 'rgb(255, 99, 132)',
+                  borderWidth: 2,
+                };
+              }),
+              ...events.map((e): AnnotationOptions => {
+                return {
+                  type: 'label',
+                  xValue: startDate ? e.time.diff(startDate).as('seconds') : 0,
+                  yValue: 2,
+                  content: [e.label],
+                  font: {
+                    size: 14,
+                  },
+                  color: 'rgb(255, 99, 132)',
+                  xAdjust: 0,
+                  yAdjust: -24,
+                  textAlign: 'start',
+                  position: '0%',
+                };
+              }),
+            ],
           },
         },
         scales: {

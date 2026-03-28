@@ -6,7 +6,7 @@ import {
   type RecorderContextType,
 } from './RecorderContext.ts';
 import { last } from 'lodash-es';
-import type { YaegerMessageWrapper } from '../types/connection.ts';
+import type { RoastEvent, YaegerMessageWrapper } from '../types/connection.ts';
 import { usePidControlSetpoint } from '../hooks/usePidControl.ts';
 import { useYaegerLastMessage } from '../hooks/useYaeger.ts';
 
@@ -17,6 +17,7 @@ type Props = {
 export const RecorderProvider: React.FC<Props> = ({ children }) => {
   const [recording, setRecording] = useState<boolean>(false);
   const [records, setRecords] = useState<YaegerMessageWrapper[]>([]);
+  const [events, setEvents] = useState<RoastEvent[]>([]);
   const [startDate, setStartDate] = useState<DateTime>();
   const [setpoint] = usePidControlSetpoint();
   const lastMessage = useYaegerLastMessage();
@@ -25,6 +26,7 @@ export const RecorderProvider: React.FC<Props> = ({ children }) => {
     console.log('Starting recorder');
     setRecording(true);
     setRecords([]);
+    setEvents([]);
     setStartDate(DateTime.now());
   }, []);
 
@@ -38,6 +40,13 @@ export const RecorderProvider: React.FC<Props> = ({ children }) => {
     setRecords([]);
     setStartDate(DateTime.now());
   }, []);
+
+  const addEvent = useCallback(
+    (event: RoastEvent) => {
+      setEvents([...events, event]);
+    },
+    [events],
+  );
 
   useEffect(() => {
     if (!lastMessage) return;
@@ -64,8 +73,10 @@ export const RecorderProvider: React.FC<Props> = ({ children }) => {
       clear,
       stop,
       start,
+      events,
+      addEvent,
     };
-  }, [clear, recording, records, start, startDate, stop]);
+  }, [addEvent, clear, events, recording, records, start, startDate, stop]);
 
   return (
     <RecorderContext.Provider value={providerProps}>
