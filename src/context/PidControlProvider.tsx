@@ -16,6 +16,9 @@ type Props = {
   children: React.ReactNode;
 };
 
+const KP = parseInt(import.meta.env.VITE_PID_KP || '1');
+const KI = parseInt(import.meta.env.VITE_PID_KI || '0');
+const KD = parseInt(import.meta.env.VITE_PID_KD || '0.1');
 // Dummy:  kp: 20, ki: 0.6, kd: 1,
 // OwnMachine:  kp: 1.5, ki: 0.012, kd: 12
 export const PidControlProvider: React.FC<Props> = ({ children }) => {
@@ -26,9 +29,9 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
     undefined,
   );
   const [values, setValues] = useState({
-    kp: 20,
-    ki: 0.6,
-    kd: 1,
+    kp: KP,
+    ki: KI,
+    kd: KD,
   });
   const [referenceValue, setReferenceValue] = useState<PidReference>('ET');
   const sendCommand = useYaegerSendCommand();
@@ -82,10 +85,7 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
   useEffect(() => {
     if (!pidTune) return;
     if (!lastMessage) return;
-    pidTune.temperatureUpdate(
-      lastMessage.time,
-      lastMessage.message.ET,
-    );
+    pidTune.temperatureUpdate(lastMessage.time, lastMessage.message.ET);
     const result = pidTune.checkForCompletion();
     if (!result) return;
     console.log('Final result', result);

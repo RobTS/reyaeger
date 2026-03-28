@@ -19,6 +19,7 @@ export const RecorderProvider: React.FC<Props> = ({ children }) => {
   const [records, setRecords] = useState<YaegerMessageWrapper[]>([]);
   const [startDate, setStartDate] = useState<DateTime | undefined>();
   const [setpoint] = usePidControlSetpoint();
+  const lastMessage = useYaegerLastMessage();
 
   const start = useCallback(() => {
     console.log('Starting recorder');
@@ -37,24 +38,22 @@ export const RecorderProvider: React.FC<Props> = ({ children }) => {
     setStartDate(undefined);
   }, []);
 
-  const record = useYaegerLastMessage();
-
   useEffect(() => {
-    if (!record) return;
+    if (!lastMessage) return;
     if (!recording) return;
 
-    if (last(records)?.time !== record.time)
+    if (last(records)?.time !== lastMessage.time)
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setRecords([
         ...records,
         {
-          ...record,
+          ...lastMessage,
           extras: {
             setpoint,
           },
         },
       ]);
-  }, [record, recording, records, setpoint]);
+  }, [lastMessage, recording, records, setpoint]);
 
   const providerProps = useMemo<RecorderContextType>(() => {
     return {
