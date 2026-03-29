@@ -31,8 +31,8 @@ Chart.register(
 const calculateRoR = (temps: number[], times: number[]) =>
   temps.map((temp, i) => {
     if (i === 0) return null; // No RoR for the first data point
-    const deltaTemp = temp - temps[i - 1];
-    const deltaTime = times[i] - times[i - 1];
+    const deltaTemp = temp - temps[i - 1]!;
+    const deltaTime = times[i]! - times[i - 1]!;
     return deltaTime > 0 ? deltaTemp / deltaTime : 0;
   });
 

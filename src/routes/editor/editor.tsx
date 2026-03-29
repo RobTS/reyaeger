@@ -1,59 +1,109 @@
 'use client';
 
-import type React from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { useAppDispatch, useAppSelector } from '../../state/store.ts';
+import { Duration } from 'luxon';
+import { Actions } from '../../state/actions';
+import { getPathForPoints } from '../../common/splineUtils.ts';
+import { last } from 'lodash-es';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { CurvePoint } from '../../types/profile.ts';
-import { generateCurvePoints } from '../../common/bezierUtils.ts';
+const MAX_TEMP = 250;
 
-interface BezierCurveEditorProps {
-  targetTemperature: number;
-  targetTimeMinutes: number;
-  targetControl: { x: number; y: number };
-  startTemperature?: number;
-  onCurveChange: (
-    curve: CurvePoint[],
-    control: { x: number; y: number },
-  ) => void;
-  currentTime?: number;
-  actualTemperature?: number;
-}
+export const BezierCurveEditor: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const heaterPhases = useAppSelector(
+    (s) => s.editor.profileDraft.heaterPhases,
+  );
+  const fanPhases = useAppSelector((s) => s.editor.profileDraft.fanPhases);
+  const [activePhase, setActivePhase] = useState<
+    { type: 'heater' | 'fan'; index: number } | undefined
+  >(undefined);
+  const currentTime = 0;
+  const currentTemperature = 0;
 
-export const BezierCurveEditor: React.FC<BezierCurveEditorProps> = ({
-  targetTemperature,
-  targetTimeMinutes,
-  targetControl,
-  startTemperature = 25,
-  onCurveChange,
-  currentTime = 0,
-  actualTemperature,
-}) => {
+  const totalTimeSeconds = Math.max(
+    last(heaterPhases)?.time || 0,
+    last(fanPhases)?.time || 0,
+    60,
+  );
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [controlPoint, setControlPoint] = useState(targetControl);
-  const [isDragging, setIsDragging] = useState(false);
+  const [draggingPoint, setDraggingPoint] = useState<
+    | {
+        type: 'heater' | 'fan';
+        index: number;
+      }
+    | undefined
+  >(undefined);
   const [dimensions, setDimensions] = useState({ width: 600, height: 400 });
-
-  const onCurveChangeRef = useRef(onCurveChange);
-  useEffect(() => {
-    onCurveChangeRef.current = onCurveChange;
-  }, [onCurveChange]);
 
   const padding = { top: 40, right: 40, bottom: 50, left: 60 };
   const chartWidth = dimensions.width - padding.left - padding.right;
   const chartHeight = dimensions.height - padding.top - padding.bottom;
 
-  const totalTimeSeconds = targetTimeMinutes * 60;
-
-  useEffect(() => {
-    const curve = generateCurvePoints(
-      startTemperature,
-      targetTemperature,
+  const heaterCurvePath = useMemo(
+    () =>
+      new Path2D(
+        getPathForPoints(
+          heaterPhases.map((h) => [h.time, h.temperature]),
+          {
+            scaleX: {
+              domain: [0, totalTimeSeconds],
+              range: [padding.left, dimensions.width - padding.right],
+            },
+            scaleY: {
+              domain: [0, 250],
+              range: [dimensions.height - padding.bottom, padding.top],
+            },
+          },
+        ),
+      ),
+    [
+      dimensions.height,
+      dimensions.width,
+      heaterPhases,
+      padding.bottom,
+      padding.left,
+      padding.right,
+      padding.top,
       totalTimeSeconds,
-      controlPoint,
-    );
-    onCurveChangeRef.current(curve, controlPoint);
-  }, [controlPoint, startTemperature, targetTemperature, totalTimeSeconds]);
+    ],
+  );
+
+  const fanCurvePath = useMemo(
+    () =>
+      new Path2D(
+        getPathForPoints(
+          fanPhases.map((h) => [h.time, h.fanSpeed]),
+          {
+            scaleX: {
+              domain: [0, totalTimeSeconds],
+              range: [padding.left, dimensions.width - padding.right],
+            },
+            scaleY: {
+              domain: [0, 100],
+              range: [dimensions.height - padding.bottom, padding.top],
+            },
+          },
+        ),
+      ),
+    [
+      dimensions.height,
+      dimensions.width,
+      fanPhases,
+      padding.bottom,
+      padding.left,
+      padding.right,
+      padding.top,
+      totalTimeSeconds,
+    ],
+  );
 
   // Handle resize
   useEffect(() => {
@@ -93,24 +143,16 @@ export const BezierCurveEditor: React.FC<BezierCurveEditorProps> = ({
     const timeToX = (time: number) =>
       padding.left + (time / totalTimeSeconds) * chartWidth;
     const tempToY = (temp: number) =>
-      padding.top +
-      chartHeight -
-      ((temp - startTemperature) /
-        (targetTemperature - startTemperature + 20)) *
-        chartHeight;
-    const xToTime = (x: number) =>
-      ((x - padding.left) / chartWidth) * totalTimeSeconds;
-    const yToTemp = (y: number) =>
-      startTemperature +
-      ((chartHeight - (y - padding.top)) / chartHeight) *
-        (targetTemperature - startTemperature + 20);
+      padding.top + chartHeight - (temp / 250) * chartHeight;
+    const speedToY = (speed: number) =>
+      padding.top + chartHeight - (speed / 100) * chartHeight;
 
     // Draw grid
     ctx.strokeStyle = 'hsl(240 10% 20%)';
     ctx.lineWidth = 1;
 
     // Vertical grid lines (time)
-    for (let i = 0; i <= targetTimeMinutes; i++) {
+    for (let i = 0; i <= Math.floor(totalTimeSeconds / 60); i++) {
       const x = timeToX(i * 60);
       ctx.beginPath();
       ctx.moveTo(x, padding.top);
@@ -120,7 +162,7 @@ export const BezierCurveEditor: React.FC<BezierCurveEditorProps> = ({
 
     // Horizontal grid lines (temperature)
     const tempStep = 25;
-    for (let temp = 50; temp <= targetTemperature + 20; temp += tempStep) {
+    for (let temp = 0; temp <= MAX_TEMP + 20; temp += tempStep) {
       const y = tempToY(temp);
       ctx.beginPath();
       ctx.moveTo(padding.left, y);
@@ -134,74 +176,62 @@ export const BezierCurveEditor: React.FC<BezierCurveEditorProps> = ({
     ctx.textAlign = 'center';
 
     // Time labels
-    for (let i = 0; i <= targetTimeMinutes; i++) {
-      const x = timeToX(i * 60);
-      ctx.fillText(`${i}m`, x, dimensions.height - 15);
+    for (let i = 0; i <= totalTimeSeconds; i += 30) {
+      const x = timeToX(i);
+      ctx.fillText(
+        Duration.fromDurationLike({ seconds: i }).toFormat('mm:ss'),
+        x,
+        dimensions.height - 30,
+      );
     }
 
     // Temperature labels
     ctx.textAlign = 'right';
-    for (let temp = 50; temp <= targetTemperature + 20; temp += tempStep) {
+    for (let temp = 0; temp <= MAX_TEMP + 20; temp += tempStep) {
       const y = tempToY(temp);
       ctx.fillText(`${temp}°C`, padding.left - 10, y + 4);
     }
 
-    // Draw the bezier curve
-    const p0 = { x: timeToX(0), y: tempToY(startTemperature) };
-    const p2 = { x: timeToX(totalTimeSeconds), y: tempToY(targetTemperature) };
-    const p1 = {
-      x: padding.left + controlPoint.x * chartWidth,
-      y: padding.top + chartHeight - controlPoint.y * chartHeight,
-    };
-
-    // Curve fill
-    ctx.beginPath();
-    ctx.moveTo(p0.x, p0.y);
-    ctx.quadraticCurveTo(p1.x, p1.y, p2.x, p2.y);
-    ctx.lineTo(p2.x, padding.top + chartHeight);
-    ctx.lineTo(p0.x, padding.top + chartHeight);
-    ctx.closePath();
-    ctx.fillStyle = 'hsla(35, 80%, 55%, 0.1)';
-    ctx.fill();
-
-    // Curve line
-    ctx.beginPath();
-    ctx.moveTo(p0.x, p0.y);
-    ctx.quadraticCurveTo(p1.x, p1.y, p2.x, p2.y);
-    ctx.strokeStyle = 'hsl(35, 80%, 55%)';
+    // Draw Paths
+    ctx.strokeStyle = 'rgba(255,255,0, 0.5)';
     ctx.lineWidth = 3;
-    ctx.stroke();
+    ctx.stroke(heaterCurvePath);
 
-    // Draw control lines
-    ctx.strokeStyle = 'hsla(35, 80%, 55%, 0.3)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([5, 5]);
-    ctx.beginPath();
-    ctx.moveTo(p0.x, p0.y);
-    ctx.lineTo(p1.x, p1.y);
-    ctx.lineTo(p2.x, p2.y);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    ctx.strokeStyle = 'rgb(4 249 255 / 0.5)';
+    ctx.lineWidth = 3;
+    ctx.stroke(fanCurvePath);
 
-    // Draw control point
-    ctx.beginPath();
-    ctx.arc(p1.x, p1.y, 12, 0, Math.PI * 2);
-    ctx.fillStyle = isDragging ? 'hsl(35, 80%, 65%)' : 'hsl(35, 80%, 55%)';
-    ctx.fill();
-    ctx.strokeStyle = 'hsl(0 0% 100%)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    heaterPhases.forEach((point, index) => {
+      const p = {
+        x: timeToX(point.time),
+        y: tempToY(point.temperature),
+      };
 
-    // Draw start and end points
-    ctx.beginPath();
-    ctx.arc(p0.x, p0.y, 6, 0, Math.PI * 2);
-    ctx.fillStyle = 'hsl(200, 60%, 50%)';
-    ctx.fill();
+      // Draw Points
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+      ctx.fillStyle =
+        activePhase?.type === 'heater' && index === activePhase.index
+          ? 'rgb(255 121 36 / 0.9)'
+          : 'rgba(60%, 60%, 90%, 0.9)';
+      ctx.fill();
+    });
 
-    ctx.beginPath();
-    ctx.arc(p2.x, p2.y, 6, 0, Math.PI * 2);
-    ctx.fillStyle = 'hsl(0, 70%, 55%)';
-    ctx.fill();
+    fanPhases.forEach((point, index) => {
+      const p = {
+        x: timeToX(point.time),
+        y: speedToY(point.fanSpeed),
+      };
+
+      // Draw Points
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+      ctx.fillStyle =
+        activePhase?.type === 'fan' && index === activePhase.index
+          ? 'rgb(255 121 36 / 0.9)'
+          : 'rgba(60%, 60%, 90%, 0.9)';
+      ctx.fill();
+    });
 
     // Draw current time marker
     if (currentTime > 0 && currentTime <= totalTimeSeconds) {
@@ -216,8 +246,8 @@ export const BezierCurveEditor: React.FC<BezierCurveEditorProps> = ({
       ctx.setLineDash([]);
 
       // Draw actual temperature point if available
-      if (actualTemperature !== undefined) {
-        const actualY = tempToY(actualTemperature);
+      if (currentTemperature !== undefined) {
+        const actualY = tempToY(currentTemperature);
         ctx.beginPath();
         ctx.arc(currentX, actualY, 8, 0, Math.PI * 2);
         ctx.fillStyle = 'hsl(140, 60%, 50%)';
@@ -232,7 +262,7 @@ export const BezierCurveEditor: React.FC<BezierCurveEditorProps> = ({
     ctx.fillStyle = 'hsl(0 0% 70%)';
     ctx.font = '14px Geist, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Time', dimensions.width / 2, dimensions.height - 2);
+    ctx.fillText('Time', dimensions.width / 2 + 10, dimensions.height - 12);
 
     ctx.save();
     ctx.translate(15, dimensions.height / 2);
@@ -240,19 +270,20 @@ export const BezierCurveEditor: React.FC<BezierCurveEditorProps> = ({
     ctx.fillText('Temperature (°C)', 0, 0);
     ctx.restore();
   }, [
-    controlPoint,
     dimensions,
-    isDragging,
     currentTime,
-    actualTemperature,
-    targetTemperature,
-    targetTimeMinutes,
-    startTemperature,
     totalTimeSeconds,
     chartWidth,
     chartHeight,
     padding.left,
     padding.top,
+    heaterPhases,
+    padding.right,
+    padding.bottom,
+    heaterCurvePath,
+    fanCurvePath,
+    fanPhases,
+    activePhase,
   ]);
 
   const handleMouseDown = useCallback(
@@ -264,27 +295,53 @@ export const BezierCurveEditor: React.FC<BezierCurveEditorProps> = ({
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
 
-      const cpX = padding.left + controlPoint.x * chartWidth;
-      const cpY = padding.top + chartHeight - controlPoint.y * chartHeight;
-
-      const distance = Math.sqrt((x - cpX) ** 2 + (y - cpY) ** 2);
-      if (distance < 20) {
-        setIsDragging(true);
+      const chartTimeSeconds =
+        ((x - padding.left) / chartWidth) * totalTimeSeconds;
+      const chartTemp = (1 - (y - padding.top) / chartHeight) * 250;
+      const chartFan = (1 - (y - padding.top) / chartHeight) * 100;
+      let heaterIndex = 0;
+      for (const point of heaterPhases) {
+        if (
+          chartTimeSeconds >= point.time - 5 &&
+          chartTimeSeconds <= point.time + 5 &&
+          chartTemp >= point.temperature - 5 &&
+          chartTemp <= point.temperature + 5
+        ) {
+          setDraggingPoint({ type: 'heater', index: heaterIndex });
+          setActivePhase({ type: 'heater', index: heaterIndex });
+          return;
+        }
+        heaterIndex = heaterIndex + 1;
+      }
+      let fanIndex = 0;
+      for (const point of fanPhases) {
+        if (
+          chartTimeSeconds >= point.time - 5 &&
+          chartTimeSeconds <= point.time + 5 &&
+          chartFan >= point.fanSpeed - 5 &&
+          chartFan <= point.fanSpeed + 5
+        ) {
+          setDraggingPoint({ type: 'fan', index: fanIndex });
+          setActivePhase({ type: 'fan', index: fanIndex });
+          return;
+        }
+        fanIndex = fanIndex + 1;
       }
     },
     [
+      chartHeight,
+      chartWidth,
+      fanPhases,
+      heaterPhases,
       padding.left,
       padding.top,
-      controlPoint.x,
-      controlPoint.y,
-      chartWidth,
-      chartHeight,
+      totalTimeSeconds,
     ],
   );
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
-      if (!isDragging) return;
+      if (draggingPoint === undefined) return;
 
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -293,22 +350,54 @@ export const BezierCurveEditor: React.FC<BezierCurveEditorProps> = ({
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
 
-      const newX = Math.max(
-        0.05,
-        Math.min(0.95, (x - padding.left) / chartWidth),
+      const newTime = Math.max(
+        0,
+        Math.min(
+          totalTimeSeconds,
+          ((x - padding.left) * totalTimeSeconds) / chartWidth,
+        ),
       );
-      const newY = Math.max(
-        0.05,
-        Math.min(0.95, 1 - (y - padding.top) / chartHeight),
-      );
+      if (draggingPoint.type === 'heater') {
+        const newTemperature = Math.max(
+          0,
+          Math.min(250, (1 - (y - padding.top) / chartHeight) * 250),
+        );
+        dispatch(
+          Actions.changeHeaterPhase({
+            index: draggingPoint.index,
+            temperature: newTemperature,
+            time: newTime,
+          }),
+        );
+      }
 
-      setControlPoint({ x: newX, y: newY });
+      if (draggingPoint.type === 'fan') {
+        const newSpeed = Math.max(
+          0,
+          Math.min(250, (1 - (y - padding.top) / chartHeight) * 100),
+        );
+        dispatch(
+          Actions.changeFanPhase({
+            index: draggingPoint.index,
+            fanSpeed: newSpeed,
+            time: newTime,
+          }),
+        );
+      }
     },
-    [isDragging, padding.left, padding.top, chartWidth, chartHeight],
+    [
+      draggingPoint,
+      totalTimeSeconds,
+      padding.left,
+      padding.top,
+      chartWidth,
+      chartHeight,
+      dispatch,
+    ],
   );
 
   const handleMouseUp = useCallback(() => {
-    setIsDragging(false);
+    setDraggingPoint(undefined);
   }, []);
 
   return (
@@ -323,11 +412,36 @@ export const BezierCurveEditor: React.FC<BezierCurveEditorProps> = ({
         onMouseLeave={handleMouseUp}
       />
       <div className="mt-3 flex items-center justify-between text-sm text-muted-foreground">
-        <span>Drag the control point to adjust the curve shape</span>
-        <span className="font-mono">
-          Control: ({(controlPoint.x * 100).toFixed(0)}%,{' '}
-          {(controlPoint.y * 100).toFixed(0)}%)
-        </span>
+        {!activePhase ? (
+          <div>Select a Marker to view more information</div>
+        ) : null}
+        {activePhase?.type === 'heater' ? (
+          <div>
+            Active Point Time:{' '}
+            {Duration.fromDurationLike({
+              seconds: heaterPhases[activePhase.index]?.time ?? 0,
+            }).toFormat('mm:ss')}
+          </div>
+        ) : null}
+        {activePhase?.type === 'heater' ? (
+          <div>
+            Active Point Temperature:{' '}
+            {heaterPhases[activePhase.index]?.temperature ?? ''}
+          </div>
+        ) : null}
+        {activePhase?.type === 'fan' ? (
+          <div>
+            Active Point Time:{' '}
+            {Duration.fromDurationLike({
+              seconds: fanPhases[activePhase.index]?.time ?? 0,
+            }).toFormat('mm:ss')}
+          </div>
+        ) : null}
+        {activePhase?.type === 'fan' ? (
+          <div>
+            Active Point Speed: {fanPhases[activePhase.index]?.fanSpeed ?? ''}
+          </div>
+        ) : null}
       </div>
     </div>
   );

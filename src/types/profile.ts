@@ -9,16 +9,14 @@ export type ProfileStep = {
   fanValue?: number;
 };
 
-export interface CurvePoint {
-  time: number; // seconds
-  temperature: number; // celsius
-  controlX?: number; // bezier control point
-  controlY?: number; // bezier control point
+export interface HeaterPhase {
+  time: number;
+  temperature: number;
 }
 
-export interface FanCurvePoint {
-  time: number; // seconds
-  fanSpeed: number; // 0-100%
+export interface FanPhase {
+  time: number;
+  fanSpeed: number;
 }
 
 export interface NxProfile {
@@ -26,9 +24,7 @@ export interface NxProfile {
   name: string;
   targetTemperature: number;
   targetTime: number; // seconds
-  curve: CurvePoint[];
-  fanCurve?: FanCurvePoint[];
-  fanStartSpeed?: number; // 0-100%
-  fanEndSpeed?: number; // 0-100%
-  createdAt: number;
+  heaterPhases: HeaterPhase[];
+  fanPhases: FanPhase[];
+  createdAt: string;
 }

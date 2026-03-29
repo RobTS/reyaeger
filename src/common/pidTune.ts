@@ -1,7 +1,6 @@
 import { DateTime } from 'luxon';
 import type { PidData } from '../types/pid.ts';
 
-
 /**
  * Simplified conversion of Klipper's Autotune mechanism
  */
@@ -87,10 +86,10 @@ export class PidAutoTune {
   }
 
   private calcPid(pos: number): PidData {
-    const tempDiff = this.peaks[pos].temp - this.peaks[pos - 1].temp;
-    const timeDiff = this.peaks[pos].time
-      .diff(this.peaks[pos - 2].time)
-      .as('milliseconds');
+    const tempDiff = this.peaks[pos]!.temp - this.peaks[pos - 1]!.temp;
+    const timeDiff = this.peaks[pos]!.time.diff(this.peaks[pos - 2]!.time).as(
+      'milliseconds',
+    );
 
     // Use Astrom-Hagglund method to estimate Ku and Tu
     const amplitude = 0.5 * Math.abs(tempDiff);
@@ -118,15 +117,15 @@ export class PidAutoTune {
   private calcFinalPid(): PidData {
     const cycleTimes = [];
     for (let pos = 4; pos < this.peaks.length; pos++) {
-      const cycleTime = this.peaks[pos].time
-        .diff(this.peaks[pos - 2].time)
-        .as('milliseconds');
+      const cycleTime = this.peaks[pos]!.time.diff(
+        this.peaks[pos - 2]!.time,
+      ).as('milliseconds');
       cycleTimes.push([cycleTime, pos]);
     }
 
-    cycleTimes.sort((a, b) => a[0] - b[0]);
-    const midpointPos = cycleTimes[Math.floor(cycleTimes.length / 2)][1];
+    cycleTimes.sort((a, b) => a[0]! - b[0]!);
+    const midpointPos = cycleTimes[Math.floor(cycleTimes.length / 2)]![1];
 
-    return this.calcPid(midpointPos);
+    return this.calcPid(midpointPos!);
   }
 }
