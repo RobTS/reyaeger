@@ -11,11 +11,46 @@ import { useAppDispatch, useAppSelector } from '../../state/store.ts';
 import { Duration } from 'luxon';
 import { Actions } from '../../state/actions';
 import { getPathForPoints } from '../../common/splineUtils.ts';
-import { last } from 'lodash-es';
+import { get, last } from 'lodash-es';
 import { Button } from '../../components/button/button.tsx';
-import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
+import {
+  faDownload,
+  faMinus,
+  faPlus,
+  faUpload,
+} from '@fortawesome/free-solid-svg-icons';
+import { convertToLegacyProfile } from '../../common/profileUtils.ts';
+import Dropzone from 'react-dropzone';
 
 const MAX_TEMP = 250;
+
+const DownloadButton: React.FC<{ className?: string }> = ({ className }) => {
+  const profileDraft = useAppSelector((s) => s.editor.profileDraft);
+
+  const onDownload = useCallback(() => {
+    if (!profileDraft.heaterPhases.length) return;
+
+    const legacyProfile = convertToLegacyProfile(profileDraft);
+
+    const blob = new Blob([JSON.stringify(legacyProfile)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'profile.json';
+    a.click();
+
+    URL.revokeObjectURL(url);
+  }, [profileDraft]);
+
+  return (
+    <Button iconLeft={faDownload} className={className} onClick={onDownload}>
+      Download
+    </Button>
+  );
+};
 
 export const BezierCurveEditor: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -439,6 +474,42 @@ export const BezierCurveEditor: React.FC = () => {
             }
           />
         </div>
+        <Dropzone
+          onDrop={(acceptedFiles) => {
+            const file = acceptedFiles[0];
+            if (!file) {
+              return;
+            }
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+              try {
+                // eslint-disable-next-line
+                const jsonData = JSON.parse(e.target?.result as string) ;
+                if (get(jsonData, 'steps')) setProfile(jsonData);
+                if (
+                  get(jsonData, 'heaterPhases') &&
+                  get(jsonData, 'fanPhases')
+                ) {
+                  setProfile(convertToLegacyProfile(jsonData));
+                }
+              } catch (error) {
+                console.log('upload failed:', error);
+              }
+            };
+            reader.readAsText(file);
+          }}
+        >
+          {({ getRootProps, getInputProps }) => (
+            <div {...getRootProps()}>
+              <input {...getInputProps()} />
+              <Button iconLeft={faUpload} className={'text-center'}>
+                Upload
+              </Button>
+            </div>
+          )}
+        </Dropzone>
+        <DownloadButton />
       </div>
       <canvas
         ref={canvasRef}
@@ -450,34 +521,26 @@ export const BezierCurveEditor: React.FC = () => {
         onMouseLeave={handleMouseUp}
       />
       <div className="mt-3 flex items-center justify-between text-sm text-muted-foreground">
-        {!activePhase ? (
-          <div>Select a Marker to view more information</div>
-        ) : null}
+        <div>Select a Marker to view more information</div>
+
         {activePhase?.type === 'heater' ? (
           <div>
-            Active Point Time:{' '}
+            Active Point:{' '}
             {Duration.fromDurationLike({
               seconds: heaterPhases[activePhase.index]?.time ?? 0,
             }).toFormat('mm:ss')}
-          </div>
-        ) : null}
-        {activePhase?.type === 'heater' ? (
-          <div>
-            Active Point Temperature:{' '}
-            {heaterPhases[activePhase.index]?.temperature ?? ''}
+            {', '}
+            {heaterPhases[activePhase.index]?.temperature ?? ''} °C
           </div>
         ) : null}
         {activePhase?.type === 'fan' ? (
           <div>
-            Active Point Time:{' '}
+            Active Point:{' '}
             {Duration.fromDurationLike({
               seconds: fanPhases[activePhase.index]?.time ?? 0,
             }).toFormat('mm:ss')}
-          </div>
-        ) : null}
-        {activePhase?.type === 'fan' ? (
-          <div>
-            Active Point Speed: {fanPhases[activePhase.index]?.fanSpeed ?? ''}
+            {', '}
+            {fanPhases[activePhase.index]?.fanSpeed ?? ''} %
           </div>
         ) : null}
       </div>

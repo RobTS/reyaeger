@@ -17,6 +17,7 @@ import type {
   RoastEvent,
   YaegerMessageWrapper,
 } from '../../types/connection.ts';
+import { last } from 'lodash-es';
 
 Chart.register(
   LinearScale,
@@ -45,13 +46,16 @@ const applyRollingAverage = (values: (number | null)[], size: number) => {
   });
 };
 
-const windowSize = 30 * 5;
+const windowSize = 10 * 5;
 
 export const LineChart: React.FC<{
   records: YaegerMessageWrapper[];
   events: RoastEvent[];
 }> = ({ records, events }) => {
   const startDate = records[0]?.time;
+  const endDate = last(records)?.time;
+  const totalTime =
+    startDate && endDate ? Math.abs(startDate.diff(endDate).as('seconds')) : 0;
   // Calculate RoR and apply rolling averages
   const { beanTemps, envTemps, timestamps, setpoints, btRor, etRor } =
     useMemo(() => {
@@ -145,6 +149,7 @@ export const LineChart: React.FC<{
               text: 'Time',
             },
             min: 0,
+            max: Math.max(totalTime, 240),
             ticks: {
               stepSize: 60,
               // eslint-disable-next-line

@@ -18,22 +18,46 @@ export const profileDraftReducer = createReducer<ProfileDraftReducerState>(
     createdAt: DateTime.now().toISOTime(),
     heaterPhases: [
       {
-        temperature: 50,
         time: 0,
+        temperature: 50,
       },
       {
-        temperature: 212,
+        time: 60,
+        temperature: 120,
+      },
+      {
+        time: 120,
+        temperature: 160,
+      },
+      {
+        time: 240,
+        temperature: 190,
+      },
+      {
         time: 420,
+        temperature: 212,
       },
       {
-        temperature: 0,
         time: 421,
+        temperature: 0,
       },
     ],
     fanPhases: [
       {
-        fanSpeed: 90,
+        fanSpeed: 95,
         time: 0,
+      },
+      {
+        fanSpeed: 90,
+        time: 60,
+      },
+      {
+        fanSpeed: 70,
+        time: 180,
+      },
+      {
+        fanSpeed: 55,
+        time: 240,
       },
       {
         fanSpeed: 55,

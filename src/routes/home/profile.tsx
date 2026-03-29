@@ -13,7 +13,15 @@ import {
 import { DateTime, Duration } from 'luxon';
 import { Button } from '../../components/button/button.tsx';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faXmark } from '@fortawesome/free-solid-svg-icons';
+import {
+  faDownload,
+  faPlay,
+  faSnowflake,
+  faStop,
+  faXmark,
+} from '@fortawesome/free-solid-svg-icons';
+import { get } from 'lodash-es';
+import { convertToLegacyProfile } from '../../common/profileUtils.ts';
 
 const DownloadButton: React.FC<{ className?: string }> = ({ className }) => {
   const records = useRecorderRecords();
@@ -22,6 +30,7 @@ const DownloadButton: React.FC<{ className?: string }> = ({ className }) => {
 
   return (
     <Button
+      iconLeft={faDownload}
       className={className}
       onClick={() => {
         console.log('download');
@@ -76,8 +85,12 @@ export const ProfileControls: React.FC = () => {
 
           reader.onload = (e) => {
             try {
-              const jsonData = JSON.parse(e.target?.result as string);
-              setProfile(jsonData);
+              // eslint-disable-next-line
+              const jsonData = JSON.parse(e.target?.result as string) ;
+              if (get(jsonData, 'steps')) setProfile(jsonData);
+              if (get(jsonData, 'heaterPhases') && get(jsonData, 'fanPhases')) {
+                setProfile(convertToLegacyProfile(jsonData));
+              }
             } catch (error) {
               console.log('upload failed:', error);
             }
@@ -127,10 +140,11 @@ export const ProfileControls: React.FC = () => {
               }, 0),
             }).toFormat('mm:ss')}
           </div>
-          <div className={'flex flex-row gap-2'}>
+          <div className={'flex flex-row flex-wrap gap-2'}>
             <Button
+              iconLeft={enabled ? faStop : faPlay}
               type={'primary'}
-              className={'w-30'}
+              className={'w-35'}
               onClick={() => {
                 if (enabled) {
                   stopProfile();
@@ -144,7 +158,8 @@ export const ProfileControls: React.FC = () => {
             </Button>
             {enabled ? (
               <Button
-                className={'bg-blue-200! w-30'}
+                iconLeft={faSnowflake}
+                className={'bg-blue-200! w-35'}
                 onClick={() => {
                   stopProfile(true);
                   addEvent({ label: 'Cooldown', time: DateTime.now() });
@@ -153,7 +168,7 @@ export const ProfileControls: React.FC = () => {
                 Cooldown
               </Button>
             ) : null}
-            <DownloadButton className={'w-30'} />
+            <DownloadButton className={'w-35'} />
           </div>
           <div>Events</div>
           <div className={'flex flex-row flex-wrap gap-2 justify-center'}>
