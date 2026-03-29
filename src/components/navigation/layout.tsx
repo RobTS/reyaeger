@@ -20,6 +20,14 @@ export const Layout: React.FC<{
           >
             Home
           </NavLink>
+          {import.meta.env.VITE_DEV_FEATURES === 'true' ? (
+            <NavLink
+              to="/editor"
+              className={({ isActive }) => (isActive ? 'text-blue-300' : '')}
+            >
+              Editor
+            </NavLink>
+          ) : null}
           <NavLink
             to="/settings"
             className={({ isActive }) => (isActive ? 'text-blue-300' : '')}

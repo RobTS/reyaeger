@@ -30,7 +30,7 @@ const BtCard = () => {
   );
 };
 
-export const HomeRoute: React.FC = () => {
+export const HomePage: React.FC = () => {
   const startDate = useRecorderStartDate();
   const duration = startDate
     ? DateTime.now().diff(startDate).toFormat('mm:ss')

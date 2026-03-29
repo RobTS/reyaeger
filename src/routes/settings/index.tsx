@@ -7,7 +7,7 @@ import {
   usePidControlValues,
 } from '../../hooks/usePidControl.ts';
 
-export const SettingsRoute: React.FC = () => {
+export const SettingsPage: React.FC = () => {
   const [tuning, setTuning] = usePidControlTuneStatus();
   const tuningResult = usePidControlTuningResult();
   const pidValues = usePidControlValues();
