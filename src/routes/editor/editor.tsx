@@ -12,6 +12,8 @@ import { Duration } from 'luxon';
 import { Actions } from '../../state/actions';
 import { getPathForPoints } from '../../common/splineUtils.ts';
 import { last } from 'lodash-es';
+import { Button } from '../../components/button/button.tsx';
+import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
 
 const MAX_TEMP = 250;
 
@@ -401,7 +403,43 @@ export const BezierCurveEditor: React.FC = () => {
   }, []);
 
   return (
-    <div ref={containerRef} className="w-full">
+    <div ref={containerRef} className="flex flex-col w-full gap-4">
+      <div className={'flex flex-row justify-end gap-2'}>
+        <div className={'flex flex-row'}>
+          <Button
+            iconRight={faPlus}
+            className={'rounded-r-none border-r-0'}
+            onClick={() => dispatch(Actions.addHeaterPhase())}
+          >
+            Heater
+          </Button>
+          <Button
+            iconRight={faMinus}
+            className={'rounded-l-none'}
+            onClick={() =>
+              dispatch(
+                Actions.removeHeaterPhase({ index: heaterPhases.length - 1 }),
+              )
+            }
+          />
+        </div>
+        <div className={'flex flex-row'}>
+          <Button
+            iconRight={faPlus}
+            className={'rounded-r-none border-r-0'}
+            onClick={() => dispatch(Actions.addFanPhase())}
+          >
+            Fan
+          </Button>
+          <Button
+            iconRight={faMinus}
+            className={'rounded-l-none'}
+            onClick={() =>
+              dispatch(Actions.removeFanPhase({ index: fanPhases.length - 1 }))
+            }
+          />
+        </div>
+      </div>
       <canvas
         ref={canvasRef}
         style={{ width: dimensions.width, height: dimensions.height }}

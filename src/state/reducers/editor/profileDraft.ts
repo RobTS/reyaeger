@@ -18,28 +18,16 @@ export const profileDraftReducer = createReducer<ProfileDraftReducerState>(
     createdAt: DateTime.now().toISOTime(),
     heaterPhases: [
       {
-        temperature: 20,
+        temperature: 50,
         time: 0,
       },
       {
-        temperature: 50,
-        time: 20,
-      },
-      {
-        temperature: 50,
-        time: 120,
-      },
-      {
-        temperature: 150,
-        time: 260,
-      },
-      {
         temperature: 212,
-        time: 300,
+        time: 420,
       },
       {
         temperature: 0,
-        time: 301,
+        time: 421,
       },
     ],
     fanPhases: [
@@ -49,11 +37,11 @@ export const profileDraftReducer = createReducer<ProfileDraftReducerState>(
       },
       {
         fanSpeed: 55,
-        time: 300,
+        time: 420,
       },
       {
         fanSpeed: 65,
-        time: 301,
+        time: 421,
       },
     ],
     id: uuidv4(),
@@ -112,10 +100,10 @@ export const profileDraftReducer = createReducer<ProfileDraftReducerState>(
         state.fanPhases.splice(action.payload.index, 1);
       })
       .addCase(Actions.addHeaterPhase, (state) => {
-        const prevPhaseTemp = last(state.heaterPhases)?.temperature || 210;
+        const lastPhase = last(state.heaterPhases);
         state.heaterPhases.push({
-          time: 60,
-          temperature: prevPhaseTemp,
+          temperature: lastPhase?.temperature ? lastPhase?.temperature : 210,
+          time: lastPhase?.time ? lastPhase?.time + 60 : 60,
         });
       })
       .addCase(Actions.removeHeaterPhase, (state, action) => {
