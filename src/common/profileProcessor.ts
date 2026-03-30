@@ -1,5 +1,4 @@
 import type { Profile, ProfileStep } from '../types/profile.ts';
-import { last } from 'lodash-es';
 
 const interpolateSetpoint = (
   start: number,
@@ -60,11 +59,5 @@ export class ProfileProcessor {
         };
       }
     }
-    const lastValue = last(this.profile.steps);
-    if (!lastValue) return;
-    return {
-      fanValue: lastValue.fanValue,
-      setpoint: lastValue.setpoint,
-    };
   }
 }
