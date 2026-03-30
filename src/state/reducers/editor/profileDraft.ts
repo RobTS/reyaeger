@@ -8,7 +8,9 @@ export type ProfileDraftReducerState = {
   id: string;
   name: string;
   heaterPhases: HeaterPhase[];
+  referenceHeaterPhases?: HeaterPhase[];
   fanPhases: FanPhase[];
+  referenceFanPhases?: FanPhase[];
   createdAt: string;
 };
 
@@ -124,7 +126,7 @@ export const profileDraftReducer = createReducer<ProfileDraftReducerState>(
           if (previousPhase && timeInput <= previousPhase.time) return;
           if (nextPhase && timeInput >= nextPhase.time) return;
 
-          phase.time = action.payload.time;
+          phase.time = timeInput;
         }
       })
       .addCase(Actions.changeHeaterPhase, (state, action) => {
@@ -144,7 +146,7 @@ export const profileDraftReducer = createReducer<ProfileDraftReducerState>(
           if (previousPhase && timeInput <= previousPhase.time) return;
           if (nextPhase && timeInput >= nextPhase.time) return;
 
-          phase.time = action.payload.time;
+          phase.time = timeInput;
         }
       })
       .addCase(Actions.removeFanPhase, (state, action) => {
@@ -190,6 +192,10 @@ export const profileDraftReducer = createReducer<ProfileDraftReducerState>(
         };
       })
       .addCase(Actions.prefillProfileDraft, (_state, action) => {
-        return action.payload;
+        return {
+          ...action.payload,
+          referenceFanPhases: action.payload.fanPhases,
+          referenceHeaterPhases: action.payload.heaterPhases,
+        };
       }),
 );

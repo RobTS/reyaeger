@@ -17,6 +17,7 @@ import {
   faDownload,
   faMinus,
   faPlus,
+  faTrash,
   faUpload,
 } from '@fortawesome/free-solid-svg-icons';
 import { convertToLegacyProfile } from '../../common/profileUtils.ts';
@@ -35,7 +36,13 @@ const DownloadButton: React.FC<{ className?: string }> = ({ className }) => {
     if (import.meta.env.VITE_LEGACY_PROFILES) {
       jsonFile = convertToLegacyProfile(profileDraft);
     } else {
-      jsonFile = profileDraft;
+      jsonFile = {
+        id: profileDraft.id,
+        heaterPhases: profileDraft.heaterPhases,
+        fanPhases: profileDraft.fanPhases,
+        createdAt: profileDraft.createdAt,
+        name: profileDraft.name,
+      };
     }
 
     const blob = new Blob([JSON.stringify(jsonFile)], {
@@ -60,10 +67,8 @@ const DownloadButton: React.FC<{ className?: string }> = ({ className }) => {
 
 export const BezierCurveEditor: React.FC = () => {
   const dispatch = useAppDispatch();
-  const heaterPhases = useAppSelector(
-    (s) => s.editor.profileDraft.heaterPhases,
-  );
-  const fanPhases = useAppSelector((s) => s.editor.profileDraft.fanPhases);
+  const { heaterPhases, fanPhases, referenceFanPhases, referenceHeaterPhases } =
+    useAppSelector((s) => s.editor.profileDraft);
   const [activePhase, setActivePhase] = useState<
     { type: 'heater' | 'fan'; index: number } | undefined
   >(undefined);
@@ -75,6 +80,7 @@ export const BezierCurveEditor: React.FC = () => {
     last(fanPhases)?.time || 0,
     60,
   );
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [draggingPoint, setDraggingPoint] = useState<
@@ -86,7 +92,10 @@ export const BezierCurveEditor: React.FC = () => {
   >(undefined);
   const [dimensions, setDimensions] = useState({ width: 600, height: 400 });
 
-  const padding = { top: 40, right: 40, bottom: 50, left: 60 };
+  const padding = useMemo(
+    () => ({ top: 40, right: 40, bottom: 50, left: 60 }),
+    [],
+  );
   const chartWidth = dimensions.width - padding.left - padding.right;
   const chartHeight = dimensions.height - padding.top - padding.bottom;
 
@@ -136,14 +145,58 @@ export const BezierCurveEditor: React.FC = () => {
           },
         ),
       ),
+    [dimensions, fanPhases, padding, totalTimeSeconds],
+  );
+
+  const referenceHeaterCurvePath = useMemo(
+    () =>
+      referenceHeaterPhases
+        ? new Path2D(
+            getPathForPoints(
+              referenceHeaterPhases.map((h) => [h.time, h.temperature]),
+              {
+                scaleX: {
+                  domain: [0, totalTimeSeconds],
+                  range: [padding.left, dimensions.width - padding.right],
+                },
+                scaleY: {
+                  domain: [0, 250],
+                  range: [dimensions.height - padding.bottom, padding.top],
+                },
+              },
+            ),
+          )
+        : undefined,
+    [dimensions, padding, referenceHeaterPhases, totalTimeSeconds],
+  );
+
+  const referenceFanCurvePath = useMemo(
+    () =>
+      referenceFanPhases
+        ? new Path2D(
+            getPathForPoints(
+              referenceFanPhases.map((h) => [h.time, h.fanSpeed]),
+              {
+                scaleX: {
+                  domain: [0, totalTimeSeconds],
+                  range: [padding.left, dimensions.width - padding.right],
+                },
+                scaleY: {
+                  domain: [0, 100],
+                  range: [dimensions.height - padding.bottom, padding.top],
+                },
+              },
+            ),
+          )
+        : undefined,
     [
       dimensions.height,
       dimensions.width,
-      fanPhases,
       padding.bottom,
       padding.left,
       padding.right,
       padding.top,
+      referenceFanPhases,
       totalTimeSeconds,
     ],
   );
@@ -236,9 +289,21 @@ export const BezierCurveEditor: React.FC = () => {
     }
 
     // Draw Paths
+    if (referenceHeaterCurvePath) {
+      ctx.strokeStyle = 'rgba(255,255,0, 0.2)';
+      ctx.lineWidth = 3;
+      ctx.stroke(referenceHeaterCurvePath);
+    }
+
     ctx.strokeStyle = 'rgba(255,255,0, 0.5)';
     ctx.lineWidth = 3;
     ctx.stroke(heaterCurvePath);
+
+    if (referenceFanCurvePath) {
+      ctx.strokeStyle = 'rgb(4 249 255 / 0.2)';
+      ctx.lineWidth = 3;
+      ctx.stroke(referenceFanCurvePath);
+    }
 
     ctx.strokeStyle = 'rgb(4 249 255 / 0.5)';
     ctx.lineWidth = 3;
@@ -258,6 +323,14 @@ export const BezierCurveEditor: React.FC = () => {
           ? 'rgb(255 121 36 / 0.9)'
           : 'rgba(60%, 60%, 90%, 0.9)';
       ctx.fill();
+
+      if (activePhase?.type === 'heater' && index === activePhase.index) {
+        ctx.textAlign = 'center';
+        const text = `${Duration.fromDurationLike({
+          seconds: point?.time ?? 0,
+        }).toFormat('mm:ss')}, ${point?.temperature} °C`;
+        ctx.fillText(text, p.x, p.y - 12);
+      }
     });
 
     fanPhases.forEach((point, index) => {
@@ -274,6 +347,14 @@ export const BezierCurveEditor: React.FC = () => {
           ? 'rgb(255 121 36 / 0.9)'
           : 'rgba(60%, 60%, 90%, 0.9)';
       ctx.fill();
+
+      if (activePhase?.type === 'fan' && index === activePhase.index) {
+        ctx.textAlign = 'center';
+        const text = `${Duration.fromDurationLike({
+          seconds: point?.time ?? 0,
+        }).toFormat('mm:ss')}, ${point?.fanSpeed} %`;
+        ctx.fillText(text, p.x, p.y - 12);
+      }
     });
 
     // Draw current time marker
@@ -318,15 +399,14 @@ export const BezierCurveEditor: React.FC = () => {
     totalTimeSeconds,
     chartWidth,
     chartHeight,
-    padding.left,
-    padding.top,
+    padding,
     heaterPhases,
-    padding.right,
-    padding.bottom,
     heaterCurvePath,
     fanCurvePath,
     fanPhases,
     activePhase,
+    referenceHeaterCurvePath,
+    referenceFanCurvePath,
   ]);
 
   const handleMouseDown = useCallback(
@@ -446,6 +526,12 @@ export const BezierCurveEditor: React.FC = () => {
   return (
     <div ref={containerRef} className="flex flex-col w-full gap-4">
       <div className={'flex flex-row justify-end gap-2'}>
+        <Button
+          iconLeft={faTrash}
+          onClick={() => dispatch(Actions.resetProfileDraft())}
+        >
+          Reset
+        </Button>
         <div className={'flex flex-row'}>
           <Button
             iconRight={faPlus}
@@ -553,30 +639,6 @@ export const BezierCurveEditor: React.FC = () => {
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       />
-      <div className="mt-3 flex items-center justify-between text-sm text-muted-foreground">
-        <div>Select a Marker to view more information</div>
-
-        {activePhase?.type === 'heater' ? (
-          <div>
-            Active Point:{' '}
-            {Duration.fromDurationLike({
-              seconds: heaterPhases[activePhase.index]?.time ?? 0,
-            }).toFormat('mm:ss')}
-            {', '}
-            {heaterPhases[activePhase.index]?.temperature ?? ''} °C
-          </div>
-        ) : null}
-        {activePhase?.type === 'fan' ? (
-          <div>
-            Active Point:{' '}
-            {Duration.fromDurationLike({
-              seconds: fanPhases[activePhase.index]?.time ?? 0,
-            }).toFormat('mm:ss')}
-            {', '}
-            {fanPhases[activePhase.index]?.fanSpeed ?? ''} %
-          </div>
-        ) : null}
-      </div>
     </div>
   );
 };

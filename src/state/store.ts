@@ -7,16 +7,31 @@ import {
 import { rootReducer } from './reducers';
 import { createLogger } from 'redux-logger';
 import { Environment } from '../common/env.ts';
+import type { ProfileDraftReducerState } from './reducers/editor/profileDraft.ts';
 
-export const createStore = () =>
-  configureStore({
+const DRAFT_KEY = 'profileDraft-0.0.1';
+
+export const createStore = () => {
+  const stringifiedDraft = localStorage.getItem(DRAFT_KEY);
+  const draftState = stringifiedDraft
+    ? JSON.parse(stringifiedDraft)
+    : undefined;
+  const store = configureStore({
     reducer: rootReducer,
     middleware: (gDM) => {
       if (Environment.isProduction()) return gDM();
-      // eslint-disable-next-line
-      return gDM().concat(createLogger({}) as any);
+      return gDM().concat(createLogger({}));
+    },
+    preloadedState: {
+      editor: { profileDraft: draftState as ProfileDraftReducerState },
     },
   });
+  store.subscribe(() => {
+    const state = store.getState();
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(state.editor.profileDraft));
+  });
+  return store;
+};
 
 export const store = createStore();
 
