@@ -51,14 +51,6 @@ export const usePidControlTuningResult = () => {
   return context.tuningResult;
 };
 
-export const usePidControlValues = () => {
-  const context = useContext(PidControlContext);
-  if (context === undefined) {
-    throw new Error('useYaeger must be used within a YaegerConnectionProvider');
-  }
-  return context.values;
-};
-
 export const usePidControlReferenceValue = (): [
   PidReference,
   (reference: PidReference) => void,

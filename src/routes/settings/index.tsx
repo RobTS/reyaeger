@@ -4,13 +4,31 @@ import cx from 'classnames';
 import {
   usePidControlTuneStatus,
   usePidControlTuningResult,
-  usePidControlValues,
 } from '../../hooks/usePidControl.ts';
+import {
+  useYaegerCommands,
+  useYaegerPidValues,
+} from '../../hooks/useYaeger.ts';
+import { useEffect, useState } from 'react';
+import { Button } from '../../components/button/button.tsx';
+import { Environment } from '../../common/env.ts';
 
 export const SettingsPage: React.FC = () => {
   const [tuning, setTuning] = usePidControlTuneStatus();
   const tuningResult = usePidControlTuningResult();
-  const pidValues = usePidControlValues();
+  const pidValues = useYaegerPidValues();
+  const { updatePid } = useYaegerCommands();
+  const [pidKp, setPidKp] = useState(pidValues?.pidKp || 0);
+  const [pidKi, setPidKi] = useState(pidValues?.pidKp || 0);
+  const [pidKd, setPidKd] = useState(pidValues?.pidKp || 0);
+
+  useEffect(() => {
+    if (!pidValues) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPidKp(pidValues.pidKp);
+    setPidKi(pidValues.pidKi);
+    setPidKd(pidValues.pidKd);
+  }, [pidValues]);
   return (
     <Layout>
       <div className={'flex flex-row gap-4'}>
@@ -21,30 +39,66 @@ export const SettingsPage: React.FC = () => {
         >
           <div className={'text-xl text-center'}>PID Settings</div>
           <div className={'flex flex-col gap-4'}>
-            <div className={'flex flex-row'}>
-              <div>P</div>
-              <div className={'flex-1 text-right'}>{pidValues.kp}</div>
+            <div className={'flex flex-row gap-4'}>
+              <div className={'flex flex-1'}>P</div>
+              <input
+                type={'number'}
+                className={'w-20 border border-gray-400 rounded-md text-end'}
+                value={pidKp}
+                onChange={(e) => {
+                  setPidKp(e.target.valueAsNumber);
+                }}
+                step={0.1}
+              />
             </div>
-            <div className={'flex flex-row'}>
-              <div>I</div>
-              <div className={'flex-1 text-right'}>{pidValues.ki}</div>
+            <div className={'flex flex-row gap-4'}>
+              <div className={'flex flex-1'}>I</div>
+              <input
+                type={'number'}
+                className={'w-20 border border-gray-400 rounded-md text-end'}
+                value={pidKi}
+                onChange={(e) => {
+                  setPidKi(e.target.valueAsNumber);
+                }}
+                step={0.001}
+              />
             </div>
-            <div className={'flex flex-row'}>
-              <div>D</div>
-              <div className={'flex-1 text-right'}>{pidValues.kd}</div>
+            <div className={'flex flex-row gap-4'}>
+              <div className={'flex flex-1'}>D</div>
+              <input
+                type={'number'}
+                className={'w-20 border border-gray-400 rounded-md text-end'}
+                value={pidKd}
+                onChange={(e) => {
+                  setPidKd(e.target.valueAsNumber);
+                }}
+                step={0.1}
+              />
             </div>
           </div>
-          <div
-            className={cx(
-              'rounded-2xl w-30 flex flex-col  justify-center text-center cursor-pointer font-bold text-white text-lg',
-              tuning ? 'bg-red-500' : 'bg-green-200',
-            )}
+          <Button
+            type={'primary'}
             onClick={() => {
-              setTuning(!tuning);
+              updatePid({
+                kp: pidKp,
+                ki: pidKi,
+                kd: pidKd,
+              });
             }}
           >
-            {tuning ? 'Tuning...' : 'Tune PID'}
-          </div>
+            Save
+          </Button>
+          {}
+          {Environment.isDevelopment() ? (
+            <Button
+              className={cx(tuning ? 'bg-red-500!' : 'bg-green-200!')}
+              onClick={() => {
+                setTuning(!tuning);
+              }}
+            >
+              {tuning ? 'Tuning...' : 'Tune PID'}
+            </Button>
+          ) : null}
           {tuningResult ? <div>{JSON.stringify(tuningResult)}</div> : null}
         </div>
       </div>

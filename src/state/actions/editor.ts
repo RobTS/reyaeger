@@ -1,10 +1,16 @@
 import { createAction } from '@reduxjs/toolkit';
+import type { ProfileDraftReducerState } from '../reducers/editor/profileDraft.ts';
 
 export const resetProfileDraft = createAction<undefined, 'resetProfileDraft'>(
   'resetProfileDraft',
 );
 
-export const addFanPhase = createAction<undefined, 'addFanPhase'>(
+export const prefillProfileDraft = createAction<
+  ProfileDraftReducerState,
+  'prefillProfileDraft'
+>('prefillProfileDraft');
+
+export const addFanPhase = createAction<{ index?: number }, 'addFanPhase'>(
   'addFanPhase',
 );
 
@@ -24,9 +30,10 @@ export const removeFanPhase = createAction<
   'removeFanPhase'
 >('removeFanPhase');
 
-export const addHeaterPhase = createAction<undefined, 'addHeaterPhase'>(
-  'addHeaterPhase',
-);
+export const addHeaterPhase = createAction<
+  { index?: number },
+  'addHeaterPhase'
+>('addHeaterPhase');
 
 export const changeHeaterPhase = createAction<
   {

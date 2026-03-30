@@ -7,7 +7,8 @@ import {
 import { PidController } from '../common/pid.ts';
 import {
   useYaegerLastMessage,
-  useYaegerSendCommand,
+  useYaegerCommands,
+  useYaegerPidValues,
 } from '../hooks/useYaeger.ts';
 import type { PidData, PidReference } from '../types/pid.ts';
 import { PidAutoTune } from '../common/pidTune.ts';
@@ -16,10 +17,6 @@ type Props = {
   children: React.ReactNode;
 };
 
-const KP = parseFloat(import.meta.env.VITE_PID_KP || '1');
-const KI = parseFloat(import.meta.env.VITE_PID_KI || '0');
-const KD = parseFloat(import.meta.env.VITE_PID_KD || '0.1');
-
 export const PidControlProvider: React.FC<Props> = ({ children }) => {
   const [setpoint, setSetpoint] = useState<number>(0);
   const [enabled, setEnabled] = useState(true);
@@ -27,16 +24,21 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
   const [tuningResult, setTuningResult] = useState<PidData | undefined>(
     undefined,
   );
-  const [values, setValues] = useState({
-    kp: KP,
-    ki: KI,
-    kd: KD,
-  });
+
   const [referenceValue, setReferenceValue] = useState<PidReference>('ET');
-  const sendCommand = useYaegerSendCommand();
+  const { sendCommand } = useYaegerCommands();
+  const yaegerValues = useYaegerPidValues();
   const lastMessage = useYaegerLastMessage();
 
-  const controller = useMemo(() => new PidController(values), [values]);
+  const controller = useMemo(
+    () =>
+      new PidController({
+        kp: yaegerValues?.pidKp || 0,
+        ki: yaegerValues?.pidKi || 0,
+        kd: yaegerValues?.pidKd || 0,
+      }),
+    [yaegerValues],
+  );
 
   const pidTune = useMemo(() => {
     if (!tuneEnabled) return;
@@ -109,8 +111,6 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
       return {
         enabled,
         setEnabled,
-        values,
-        setValues,
         tuneEnabled,
         setTuneEnabled,
         resetPid,
@@ -127,7 +127,6 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
       setpoint,
       tuneEnabled,
       tuningResult,
-      values,
     ]);
 
   return (

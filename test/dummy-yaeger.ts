@@ -72,6 +72,11 @@ setInterval(() => {
   computeCalories();
 }, 100);
 
+const pidValues = {
+  pidKp: 0.8,
+  pidKi: 0.16,
+  pidKd: 1.2,
+};
 wss.on('connection', (ws: WebSocket) => {
   ws.on('error', console.error);
 
@@ -86,9 +91,26 @@ wss.on('connection', (ws: WebSocket) => {
           command: { ...(lastSetting ? lastSetting.command : {}), ...payload },
         };
       }
+      if (['setPid', 'getPid'].includes(payload.command)) {
+        if (payload.command === 'setPid') {
+          pidValues.pidKp = payload.pidKp;
+          pidValues.pidKi = payload.pidKi;
+          pidValues.pidKd = payload.pidKd;
+        }
+        ws.send(
+          JSON.stringify({
+            data: {
+              type: 'pid',
+              ...pidValues,
+            },
+          }),
+        );
+        return;
+      }
       ws.send(
         JSON.stringify({
           data: {
+            type: 'status',
             ET: et,
             BT: bt,
             Amb: amb,

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { DateTime } from 'luxon';
 import {
   RecorderContext,
@@ -7,11 +7,11 @@ import {
 } from './RecorderContext.ts';
 import { last } from 'lodash-es';
 import type { RoastEvent, YaegerMessageWrapper } from '../types/connection.ts';
+import { usePidControlSetpoint } from '../hooks/usePidControl.ts';
 import {
-  usePidControlSetpoint,
-  usePidControlValues,
-} from '../hooks/usePidControl.ts';
-import { useYaegerLastMessage } from '../hooks/useYaeger.ts';
+  useYaegerLastMessage,
+  useYaegerPidValues,
+} from '../hooks/useYaeger.ts';
 
 type Props = {
   children: React.ReactNode;
@@ -24,7 +24,7 @@ export const RecorderProvider: React.FC<Props> = ({ children }) => {
   const [startDate, setStartDate] = useState<DateTime>();
   const [setpoint] = usePidControlSetpoint();
   const lastMessage = useYaegerLastMessage();
-  const pidData = usePidControlValues();
+  const pidData = useYaegerPidValues();
 
   const start = useCallback(() => {
     console.log('Starting recorder');
@@ -64,7 +64,13 @@ export const RecorderProvider: React.FC<Props> = ({ children }) => {
           ...lastMessage,
           extra: {
             setpoint,
-            pidData,
+            pidData: pidData
+              ? {
+                  kp: pidData?.pidKp,
+                  ki: pidData?.pidKi,
+                  kd: pidData?.pidKd,
+                }
+              : undefined,
           },
         },
       ]);

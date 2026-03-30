@@ -30,9 +30,15 @@ const DownloadButton: React.FC<{ className?: string }> = ({ className }) => {
   const onDownload = useCallback(() => {
     if (!profileDraft.heaterPhases.length) return;
 
-    const legacyProfile = convertToLegacyProfile(profileDraft);
+    // eslint-disable-next-line
+    let jsonFile: any;
+    if (import.meta.env.VITE_LEGACY_PROFILES) {
+      jsonFile = convertToLegacyProfile(profileDraft);
+    } else {
+      jsonFile = profileDraft;
+    }
 
-    const blob = new Blob([JSON.stringify(legacyProfile)], {
+    const blob = new Blob([JSON.stringify(jsonFile)], {
       type: 'application/json',
     });
     const url = URL.createObjectURL(blob);
@@ -444,7 +450,16 @@ export const BezierCurveEditor: React.FC = () => {
           <Button
             iconRight={faPlus}
             className={'rounded-r-none border-r-0'}
-            onClick={() => dispatch(Actions.addHeaterPhase())}
+            onClick={() =>
+              dispatch(
+                Actions.addHeaterPhase({
+                  index:
+                    activePhase?.type === 'heater'
+                      ? activePhase.index
+                      : undefined,
+                }),
+              )
+            }
           >
             Heater
           </Button>
@@ -453,7 +468,12 @@ export const BezierCurveEditor: React.FC = () => {
             className={'rounded-l-none'}
             onClick={() =>
               dispatch(
-                Actions.removeHeaterPhase({ index: heaterPhases.length - 1 }),
+                Actions.removeHeaterPhase({
+                  index:
+                    activePhase?.type === 'heater'
+                      ? activePhase.index
+                      : heaterPhases.length - 1,
+                }),
               )
             }
           />
@@ -462,7 +482,14 @@ export const BezierCurveEditor: React.FC = () => {
           <Button
             iconRight={faPlus}
             className={'rounded-r-none border-r-0'}
-            onClick={() => dispatch(Actions.addFanPhase())}
+            onClick={() =>
+              dispatch(
+                Actions.addFanPhase({
+                  index:
+                    activePhase?.type === 'fan' ? activePhase.index : undefined,
+                }),
+              )
+            }
           >
             Fan
           </Button>
@@ -470,7 +497,14 @@ export const BezierCurveEditor: React.FC = () => {
             iconRight={faMinus}
             className={'rounded-l-none'}
             onClick={() =>
-              dispatch(Actions.removeFanPhase({ index: fanPhases.length - 1 }))
+              dispatch(
+                Actions.removeFanPhase({
+                  index:
+                    activePhase?.type === 'fan'
+                      ? activePhase.index
+                      : heaterPhases.length - 1,
+                }),
+              )
             }
           />
         </div>
@@ -486,12 +520,11 @@ export const BezierCurveEditor: React.FC = () => {
               try {
                 // eslint-disable-next-line
                 const jsonData = JSON.parse(e.target?.result as string) ;
-                if (get(jsonData, 'steps')) setProfile(jsonData);
                 if (
                   get(jsonData, 'heaterPhases') &&
                   get(jsonData, 'fanPhases')
                 ) {
-                  setProfile(convertToLegacyProfile(jsonData));
+                  dispatch(Actions.prefillProfileDraft(jsonData));
                 }
               } catch (error) {
                 console.log('upload failed:', error);

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {
+  useYaegerCommands,
   useYaegerLastMessage,
-  useYaegerSendCommand,
 } from '../../hooks/useYaeger.ts';
 import {
   usePidControlReferenceValue,
@@ -13,7 +13,7 @@ import { useHotkeys } from 'react-hotkeys-hook';
 
 export const RoastingControls: React.FC = () => {
   const lastMessage = useYaegerLastMessage();
-  const sendCommand = useYaegerSendCommand();
+  const { sendCommand } = useYaegerCommands();
   const [setpoint, setSetpoint] = usePidControlSetpoint();
   const [pidEnabled, setPidEnabled] = usePidControlStatus();
   const [pidReference, setPidReference] = usePidControlReferenceValue();

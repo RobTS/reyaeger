@@ -2,8 +2,6 @@ import { createContext } from 'react';
 import type { PidData, PidReference } from '../types/pid.ts';
 
 export type PidControlContextType = {
-  values: PidData;
-  setValues: (values: PidData) => void;
   enabled: boolean;
   resetPid: () => void;
   setEnabled: (enabled: boolean) => void;
@@ -17,8 +15,6 @@ export type PidControlContextType = {
 };
 
 export const PidControlContext = createContext<PidControlContextType>({
-  values: { ki: 1, kp: 0.1, kd: 0 },
-  setValues: () => {},
   enabled: false,
   setEnabled: () => {},
   resetPid: () => {},

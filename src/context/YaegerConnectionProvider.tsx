@@ -9,7 +9,9 @@ import { DateTime } from 'luxon';
 import type {
   YaegerMessage,
   YaegerMessageWrapper,
+  YaegerPidMessage,
 } from '../types/connection.ts';
+import type { PidData } from '../types/pid.ts';
 
 type Props = {
   host: string;
@@ -26,6 +28,7 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
   const [lastMessage, setLastMessage] = useState<
     YaegerMessageWrapper | undefined
   >();
+  const [pidInfo, setPidInfo] = useState<YaegerPidMessage | undefined>();
   const [error, setError] = useState<Error | undefined>();
   const commandsToSend = useRef<
     { BurnerVal?: number; FanVal?: number } | undefined
@@ -40,14 +43,25 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
       setWs(websocket);
       setClientId(id);
       setStatus('connected');
+      websocket.send(
+        JSON.stringify({
+          id: DateTime.now().toMillis(),
+          command: 'getPid',
+        }),
+      );
     };
 
     websocket.onmessage = (event) => {
       try {
         const message: YaegerMessage = JSON.parse(event.data).data;
-        if (message != undefined) {
-          //console.log('Received message', message);
-          setLastMessage({ time: DateTime.now(), message });
+        if (message) {
+          if (message.type === 'status') {
+            setLastMessage({ time: DateTime.now(), message });
+          }
+          if (message.type === 'pid') {
+            console.log('Received message', message);
+            setPidInfo(message);
+          }
         }
       } catch (error) {
         console.error('Error parsing WebSocket message:', error);
@@ -81,7 +95,7 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
           ...(cmd ? cmd : {}),
         }),
       );
-    }, 1000 / 10);
+    }, 1000 / 0.1);
 
     return () => {
       clearInterval(interval);
@@ -98,6 +112,21 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
     [],
   );
 
+  const updatePidInfo = useCallback(
+    (pid: PidData) => {
+      ws?.send(
+        JSON.stringify({
+          id: DateTime.now().toMillis(),
+          command: 'setPid',
+          pidKp: pid.kp,
+          pidKi: pid.ki,
+          pidKd: pid.kd,
+        }),
+      );
+    },
+    [ws],
+  );
+
   const providerProps = useMemo<ConnectionContextType>(() => {
     return {
       status,
@@ -105,8 +134,18 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
       lastMessage,
       sendCommand,
       error,
+      pidInfo,
+      updatePidInfo: updatePidInfo,
     };
-  }, [status, clientId, lastMessage, sendCommand, error]);
+  }, [
+    status,
+    clientId,
+    lastMessage,
+    sendCommand,
+    error,
+    pidInfo,
+    updatePidInfo,
+  ]);
 
   return (
     <YaegerConnectionContext.Provider value={providerProps}>

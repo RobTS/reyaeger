@@ -11,10 +11,7 @@ import {
   usePidControlCommands,
   usePidControlSetpoint,
 } from '../hooks/usePidControl.ts';
-import {
-  useYaegerLastMessage,
-  useYaegerSendCommand,
-} from '../hooks/useYaeger.ts';
+import { useYaegerCommands, useYaegerLastMessage } from '../hooks/useYaeger.ts';
 
 type Props = {
   children: React.ReactNode;
@@ -25,7 +22,7 @@ export const ProfileExecutionProvider: React.FC<Props> = ({ children }) => {
   const [startDate, setStartDate] = useState<DateTime | undefined>();
   const setSetpoint = usePidControlSetpoint()[1];
   const { reset } = usePidControlCommands();
-  const sendCommand = useYaegerSendCommand();
+  const { sendCommand } = useYaegerCommands();
   const lastMessage = useYaegerLastMessage();
 
   const profileProcessor = useMemo(

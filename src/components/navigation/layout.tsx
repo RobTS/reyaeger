@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { NavLink } from 'react-router';
 import { ConnectionStatus } from '../ConnectionStatus.tsx';
-import { Environment } from '../../common/env.ts';
 
 export const Layout: React.FC<{
   children: React.ReactNode | React.ReactNode[];
@@ -21,14 +20,12 @@ export const Layout: React.FC<{
           >
             Home
           </NavLink>
-          {Environment.isDevelopment() ? (
-            <NavLink
-              to="/editor"
-              className={({ isActive }) => (isActive ? 'text-blue-300' : '')}
-            >
-              Editor
-            </NavLink>
-          ) : null}
+          <NavLink
+            to="/editor"
+            className={({ isActive }) => (isActive ? 'text-blue-300' : '')}
+          >
+            Editor
+          </NavLink>
           <NavLink
             to="/settings"
             className={({ isActive }) => (isActive ? 'text-blue-300' : '')}
