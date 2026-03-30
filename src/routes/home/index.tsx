@@ -42,7 +42,7 @@ export const HomePage: React.FC = () => {
         <div className={'flex flex-row gap-4 justify-stretch max-md:flex-wrap'}>
           <div
             className={
-              'border border-gray-300 p-2 rounded-2xl w-full max-h-100'
+              'border border-gray-300 p-2 rounded-2xl w-full max-h-100 min-h-100'
             }
           >
             <RoastingLineChart />
