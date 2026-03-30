@@ -10,6 +10,7 @@ type Props = {
   type?: 'primary' | 'default' | 'text';
   children?: React.ReactNode | React.ReactNode[];
   className?: string;
+  disabled?: boolean;
 };
 export const Button: React.FC<Props> = ({
   children,
@@ -18,9 +19,11 @@ export const Button: React.FC<Props> = ({
   className,
   iconLeft,
   iconRight,
+  disabled,
 }) => {
   return (
     <button
+      disabled={disabled}
       className={cx(
         'block h-10 px-4 rounded-2xl cursor-pointer gap-2',
         type === 'primary'

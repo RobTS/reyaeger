@@ -67,10 +67,9 @@ const DownloadButton: React.FC<{ className?: string }> = ({ className }) => {
 
 export const ProfileControls: React.FC = () => {
   const [profile, setProfile] = useProfileExecutionProfile();
-  const enabled = useProfileExecutionEnabled();
+  const profileExecutionEnabled = useProfileExecutionEnabled();
   const { start: startProfile, stop: stopProfile } =
     useProfileExecutionCommands();
-
   const { start: startRecorder, addEvent } = useRecorderCommands();
 
   if (!profile) {
@@ -120,7 +119,7 @@ export const ProfileControls: React.FC = () => {
         'flex flex-col flex-1 gap-4 items-center w-full border border-gray-300 rounded-2xl p-4 relative'
       }
     >
-      {profile ? (
+      {profile && !profileExecutionEnabled ? (
         <div
           className={'absolute top-2 right-2 cursor-pointer'}
           onClick={() => setProfile(undefined)}
@@ -142,11 +141,11 @@ export const ProfileControls: React.FC = () => {
           </div>
           <div className={'flex flex-row flex-wrap gap-2'}>
             <Button
-              iconLeft={enabled ? faStop : faPlay}
+              iconLeft={profileExecutionEnabled ? faStop : faPlay}
               type={'primary'}
               className={'w-35'}
               onClick={() => {
-                if (enabled) {
+                if (profileExecutionEnabled) {
                   stopProfile();
                 } else {
                   startProfile();
@@ -154,9 +153,9 @@ export const ProfileControls: React.FC = () => {
                 }
               }}
             >
-              {enabled ? 'Stop' : 'Start'}
+              {profileExecutionEnabled ? 'Stop' : 'Start'}
             </Button>
-            {enabled ? (
+            {profileExecutionEnabled ? (
               <Button
                 iconLeft={faSnowflake}
                 className={'bg-blue-200! w-35'}

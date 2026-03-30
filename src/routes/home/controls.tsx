@@ -10,6 +10,7 @@ import {
 } from '../../hooks/usePidControl.ts';
 import { Button } from '../../components/button/button.tsx';
 import { useHotkeys } from 'react-hotkeys-hook';
+import { useProfileExecutionEnabled } from '../../hooks/useProfileExecution.ts';
 
 export const RoastingControls: React.FC = () => {
   const lastMessage = useYaegerLastMessage();
@@ -17,6 +18,7 @@ export const RoastingControls: React.FC = () => {
   const [setpoint, setSetpoint] = usePidControlSetpoint();
   const [pidEnabled, setPidEnabled] = usePidControlStatus();
   const [pidReference, setPidReference] = usePidControlReferenceValue();
+  const profileExecutionEnabled = useProfileExecutionEnabled();
 
   useHotkeys('d', () => {
     if (pidEnabled) {
@@ -60,6 +62,7 @@ export const RoastingControls: React.FC = () => {
       >
         <div>Fan Control - {lastMessage?.message.FanVal.toFixed(1)} %</div>
         <input
+          disabled={profileExecutionEnabled}
           type="range"
           className="range range-xl w-full max-w-200"
           aria-label="range"
@@ -91,6 +94,7 @@ export const RoastingControls: React.FC = () => {
             <label className="flex items-center cursor-pointer relative">
               <input
                 type="checkbox"
+                disabled={profileExecutionEnabled}
                 checked={pidEnabled}
                 onChange={() => setPidEnabled(!pidEnabled)}
                 className="peer h-5 w-5 cursor-pointer transition-all rounded shadow hover:shadow-md border border-slate-300 checked:bg-blue-600 checked:border-blue-600"
@@ -126,6 +130,7 @@ export const RoastingControls: React.FC = () => {
 
         {pidEnabled ? (
           <input
+            disabled={profileExecutionEnabled}
             type="range"
             className="range range-xl w-full max-w-200"
             aria-label="range"
@@ -138,6 +143,7 @@ export const RoastingControls: React.FC = () => {
           />
         ) : (
           <input
+            disabled={profileExecutionEnabled}
             type="range"
             className="range range-xl w-full max-w-200"
             aria-label="range"

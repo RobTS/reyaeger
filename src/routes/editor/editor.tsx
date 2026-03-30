@@ -15,6 +15,8 @@ import { get, last } from 'lodash-es';
 import { Button } from '../../components/button/button.tsx';
 import {
   faDownload,
+  faFan,
+  faFire,
   faMinus,
   faPlus,
   faTrash,
@@ -534,6 +536,7 @@ export const BezierCurveEditor: React.FC = () => {
         </Button>
         <div className={'flex flex-row'}>
           <Button
+            iconLeft={faFire}
             iconRight={faPlus}
             className={'rounded-r-none border-r-0'}
             onClick={() =>
@@ -566,6 +569,7 @@ export const BezierCurveEditor: React.FC = () => {
         </div>
         <div className={'flex flex-row'}>
           <Button
+            iconLeft={faFan}
             iconRight={faPlus}
             className={'rounded-r-none border-r-0'}
             onClick={() =>

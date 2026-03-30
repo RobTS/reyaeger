@@ -10,6 +10,7 @@ import { DateTime } from 'luxon';
 import {
   usePidControlCommands,
   usePidControlSetpoint,
+  usePidControlStatus,
 } from '../hooks/usePidControl.ts';
 import { useYaegerCommands, useYaegerLastMessage } from '../hooks/useYaeger.ts';
 
@@ -21,6 +22,7 @@ export const ProfileExecutionProvider: React.FC<Props> = ({ children }) => {
   const [profile, setProfile] = useState<Profile | undefined>(undefined);
   const [startDate, setStartDate] = useState<DateTime | undefined>();
   const setSetpoint = usePidControlSetpoint()[1];
+  const setPidEnabled = usePidControlStatus()[1];
   const { reset } = usePidControlCommands();
   const { sendCommand } = useYaegerCommands();
   const lastMessage = useYaegerLastMessage();
@@ -43,9 +45,11 @@ export const ProfileExecutionProvider: React.FC<Props> = ({ children }) => {
   }, [profileProcessor, sendCommand, setSetpoint, startDate, lastMessage]);
 
   const start = useCallback(() => {
+    setPidEnabled(true);
     setStartDate(DateTime.now());
     reset();
-  }, [reset]);
+  }, [reset, setPidEnabled]);
+
   const stop = useCallback(
     (cooldown?: boolean) => {
       setStartDate(undefined);
