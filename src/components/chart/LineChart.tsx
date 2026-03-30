@@ -90,6 +90,9 @@ export const LineChart: React.FC<{
   return (
     <Line
       options={{
+        maintainAspectRatio: false,
+        responsive: true,
+        animation: false,
         interaction: {
           intersect: false,
           mode: 'index',
@@ -190,8 +193,6 @@ export const LineChart: React.FC<{
             //type: "logarithmic",
           },
         },
-        responsive: true,
-        animation: false,
       }}
       data={{
         labels: timestamps,

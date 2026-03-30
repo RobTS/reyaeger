@@ -39,15 +39,19 @@ export const HomePage: React.FC = () => {
   return (
     <Layout>
       <div className={'flex flex-col gap-4'}>
-        <div className={'flex flex-row gap-4'}>
+        <div className={'flex flex-row gap-4 justify-stretch max-md:flex-wrap'}>
           <div
             className={
-              'border border-gray-300 p-2 rounded-2xl w-full aspect-auto'
+              'border border-gray-300 p-2 rounded-2xl w-full max-h-100'
             }
           >
             <RoastingLineChart />
           </div>
-          <div className={'flex flex-col flex-wrap gap-4 justify-between'}>
+          <div
+            className={
+              'flex lg:flex-col max-md:flex-row flex-wrap gap-4 justify-between max-md:w-full'
+            }
+          >
             <EtCard />
             <BtCard />
             <MetricsCard
@@ -57,7 +61,11 @@ export const HomePage: React.FC = () => {
             />
           </div>
         </div>
-        <div className={'flex flex-row gap-4 w-full items-stretch'}>
+        <div
+          className={
+            'flex lg:flex-row max-md:flex-col gap-4 w-full items-stretch'
+          }
+        >
           <ProfileControls />
           <RoastingControls />
         </div>

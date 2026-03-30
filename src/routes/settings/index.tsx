@@ -34,46 +34,58 @@ export const SettingsPage: React.FC = () => {
       <div className={'flex flex-row gap-4'}>
         <div
           className={
-            'flex flex-col gap-4 rounded-2xl border border-gray-300 p-4'
+            'flex flex-col gap-4 rounded-2xl border border-gray-300 p-4 max-md:w-full lg:w-80'
           }
         >
           <div className={'text-xl text-center'}>PID Settings</div>
           <div className={'flex flex-col gap-4'}>
             <div className={'flex flex-row gap-4'}>
               <div className={'flex flex-1'}>P</div>
-              <input
-                type={'number'}
-                className={'w-20 border border-gray-400 rounded-md text-end'}
-                value={pidKp}
-                onChange={(e) => {
-                  setPidKp(e.target.valueAsNumber);
-                }}
-                step={0.1}
-              />
+              <div className={'flex-2'}>
+                <input
+                  type={'number'}
+                  className={
+                    'w-full border border-gray-400 rounded-md text-end'
+                  }
+                  value={pidKp}
+                  onChange={(e) => {
+                    setPidKp(e.target.valueAsNumber);
+                  }}
+                  step={0.1}
+                />
+              </div>
             </div>
             <div className={'flex flex-row gap-4'}>
               <div className={'flex flex-1'}>I</div>
-              <input
-                type={'number'}
-                className={'w-20 border border-gray-400 rounded-md text-end'}
-                value={pidKi}
-                onChange={(e) => {
-                  setPidKi(e.target.valueAsNumber);
-                }}
-                step={0.001}
-              />
+              <div className={'flex-2'}>
+                <input
+                  type={'number'}
+                  className={
+                    'w-full border border-gray-400 rounded-md text-end'
+                  }
+                  value={pidKi}
+                  onChange={(e) => {
+                    setPidKi(e.target.valueAsNumber);
+                  }}
+                  step={0.001}
+                />
+              </div>
             </div>
             <div className={'flex flex-row gap-4'}>
               <div className={'flex flex-1'}>D</div>
-              <input
-                type={'number'}
-                className={'w-20 border border-gray-400 rounded-md text-end'}
-                value={pidKd}
-                onChange={(e) => {
-                  setPidKd(e.target.valueAsNumber);
-                }}
-                step={0.1}
-              />
+              <div className={'flex-2'}>
+                <input
+                  type={'number'}
+                  className={
+                    'w-full border border-gray-400 rounded-md text-end'
+                  }
+                  value={pidKd}
+                  onChange={(e) => {
+                    setPidKd(e.target.valueAsNumber);
+                  }}
+                  step={0.1}
+                />
+              </div>
             </div>
           </div>
           <Button

@@ -155,18 +155,16 @@ export const ProfileControls: React.FC = () => {
             >
               {profileExecutionEnabled ? 'Stop' : 'Start'}
             </Button>
-            {profileExecutionEnabled ? (
-              <Button
-                iconLeft={faSnowflake}
-                className={'bg-blue-200! w-35'}
-                onClick={() => {
-                  stopProfile(true);
-                  addEvent({ label: 'Cooldown', time: DateTime.now() });
-                }}
-              >
-                Cooldown
-              </Button>
-            ) : null}
+            <Button
+              iconLeft={faSnowflake}
+              className={'bg-blue-200! w-35'}
+              onClick={() => {
+                stopProfile(true);
+                addEvent({ label: 'Cooldown', time: DateTime.now() });
+              }}
+            >
+              Cooldown
+            </Button>
             <DownloadButton className={'w-35'} />
           </div>
           <div>Events</div>

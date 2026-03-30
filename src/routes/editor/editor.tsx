@@ -209,8 +209,8 @@ export const BezierCurveEditor: React.FC = () => {
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
         setDimensions({
-          width: Math.max(400, rect.width),
-          height: Math.max(300, Math.min(500, rect.width * 0.6)),
+          width: rect.width,
+          height: rect.width * 0.4,
         });
       }
     };
@@ -527,7 +527,7 @@ export const BezierCurveEditor: React.FC = () => {
 
   return (
     <div ref={containerRef} className="flex flex-col w-full gap-4">
-      <div className={'flex flex-row justify-end gap-2'}>
+      <div className={'flex flex-row justify-end gap-2 flex-wrap'}>
         <Button
           iconLeft={faTrash}
           onClick={() => dispatch(Actions.resetProfileDraft())}
@@ -636,8 +636,7 @@ export const BezierCurveEditor: React.FC = () => {
       </div>
       <canvas
         ref={canvasRef}
-        style={{ width: dimensions.width, height: dimensions.height }}
-        className="rounded-lg cursor-crosshair"
+        className="w-full min-h-75 rounded-lg cursor-crosshair"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

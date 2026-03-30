@@ -21,7 +21,6 @@ type Props = {
 export const ProfileExecutionProvider: React.FC<Props> = ({ children }) => {
   const [profile, setProfile] = useState<Profile | undefined>(undefined);
   const [startDate, setStartDate] = useState<DateTime | undefined>();
-  const [enabled, setEnabled] = useState(false);
   const setSetpoint = usePidControlSetpoint()[1];
   const setPidEnabled = usePidControlStatus()[1];
   const { reset } = usePidControlCommands();
@@ -35,30 +34,21 @@ export const ProfileExecutionProvider: React.FC<Props> = ({ children }) => {
 
   useEffect(() => {
     if (!startDate) return;
-    if (!enabled) return;
 
     const timeElapsed = -startDate.diffNow().as('milliseconds');
     const config = profileProcessor?.getConfigAtTime(timeElapsed);
     if (!config) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setEnabled(false);
+      setStartDate(undefined);
       return;
     }
     setSetpoint(config.setpoint);
     if (config.fanValue !== undefined) sendCommand({ FanVal: config.fanValue });
-  }, [
-    profileProcessor,
-    sendCommand,
-    setSetpoint,
-    startDate,
-    lastMessage,
-    enabled,
-  ]);
+  }, [profileProcessor, sendCommand, setSetpoint, startDate, lastMessage]);
 
   const start = useCallback(() => {
     setPidEnabled(true);
     setStartDate(DateTime.now());
-    setEnabled(true);
     reset();
   }, [reset, setPidEnabled]);
 
@@ -79,9 +69,9 @@ export const ProfileExecutionProvider: React.FC<Props> = ({ children }) => {
       setProfile,
       start,
       stop,
-      enabled,
+      enabled: !!startDate,
     };
-  }, [profile, start, stop, enabled]);
+  }, [profile, start, startDate, stop]);
 
   return (
     <ProfileExecutionContext.Provider value={providerProps}>
