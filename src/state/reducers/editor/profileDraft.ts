@@ -199,6 +199,11 @@ export const profileDraftReducer = createReducer<ProfileDraftReducerState>(
       .addCase(Actions.prefillProfileDraft, (_state, action) => {
         return {
           ...action.payload,
+          createdAt: action.payload.createdAt || DateTime.now().toISOTime(),
+          durationSeconds: Math.max(
+            ...action.payload.fanPhases.map((h) => h.time),
+            ...action.payload.heaterPhases.map((h) => h.time),
+          ),
           referenceFanPhases: action.payload.fanPhases,
           referenceHeaterPhases: action.payload.heaterPhases,
         };

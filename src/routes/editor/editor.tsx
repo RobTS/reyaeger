@@ -22,8 +22,8 @@ import {
   faTrash,
   faUpload,
 } from '@fortawesome/free-solid-svg-icons';
-import { convertToLegacyProfile } from '../../common/profileUtils.ts';
 import Dropzone from 'react-dropzone';
+import { convertLegacyToNxProfile } from '../../common/profileUtils.ts';
 
 const MAX_TEMP = 250;
 
@@ -34,17 +34,12 @@ const DownloadButton: React.FC<{ className?: string }> = ({ className }) => {
     if (!profileDraft.heaterPhases.length) return;
 
     // eslint-disable-next-line
-    let jsonFile: any;
-    if (import.meta.env.VITE_LEGACY_PROFILES) {
-      jsonFile = convertToLegacyProfile(profileDraft);
-    } else {
-      jsonFile = {
-        name: profileDraft.name,
-        heaterPhases: profileDraft.heaterPhases,
-        fanPhases: profileDraft.fanPhases,
-        createdAt: profileDraft.createdAt,
-      };
-    }
+    let jsonFile = {
+      name: profileDraft.name,
+      heaterPhases: profileDraft.heaterPhases,
+      fanPhases: profileDraft.fanPhases,
+      createdAt: profileDraft.createdAt,
+    };
 
     const blob = new Blob([JSON.stringify(jsonFile)], {
       type: 'application/json',
@@ -53,7 +48,7 @@ const DownloadButton: React.FC<{ className?: string }> = ({ className }) => {
 
     const a = document.createElement('a');
     a.href = url;
-    a.download = `profile_${profileDraft.name.replace(/[^0-9a-z _-]/gi, '').toLowerCase()}.json`;
+    a.download = `profile_${profileDraft.name.replace(/[^0-9a-zA-Z _-]/gi, '').toLowerCase()}.json`;
     a.click();
 
     URL.revokeObjectURL(url);
@@ -632,6 +627,15 @@ export const BezierCurveEditor: React.FC = () => {
                     get(jsonData, 'fanPhases')
                   ) {
                     dispatch(Actions.prefillProfileDraft(jsonData));
+                  }
+                  if (get(jsonData, 'steps')) {
+                    dispatch(
+                      Actions.prefillProfileDraft(
+                        convertLegacyToNxProfile(jsonData, {
+                          name: (file.name || '').split('.')[0],
+                        }),
+                      ),
+                    );
                   }
                 } catch (error) {
                   console.log('upload failed:', error);

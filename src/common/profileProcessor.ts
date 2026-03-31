@@ -1,5 +1,9 @@
-import type { NxProfile, Profile, ProfileStep } from '../types/profile.ts';
-import { convertToLegacyProfile } from './profileUtils.ts';
+import type {
+  LegacyProfile,
+  LegacyProfileStep,
+  NxProfile,
+} from '../types/profile.ts';
+import { convertNxProfileToLegacyProfile } from './profileUtils.ts';
 
 const interpolateSetpoint = (
   start: number,
@@ -28,16 +32,16 @@ const interpolateSetpoint = (
 };
 
 export class ProfileProcessor {
-  private legacyProfile: Profile;
+  private legacyProfile: LegacyProfile;
   constructor(profile: NxProfile) {
-    this.legacyProfile = convertToLegacyProfile(profile);
+    this.legacyProfile = convertNxProfileToLegacyProfile(profile);
   }
 
   getConfigAtTime(
     millis: number,
   ): { setpoint: number; fanValue: number | undefined } | undefined {
     if (!this.legacyProfile) return;
-    let previousStep: ProfileStep | undefined = undefined;
+    let previousStep: LegacyProfileStep | undefined = undefined;
     for (const step of this.legacyProfile.steps) {
       const stepDurationMs = step.duration * 1000;
       if (millis > stepDurationMs) {

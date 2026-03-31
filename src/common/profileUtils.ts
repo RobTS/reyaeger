@@ -1,8 +1,15 @@
-import { last, times } from 'lodash-es';
+import { isNumber, last, times } from 'lodash-es';
 import { getCurveForPoints } from './splineUtils.ts';
-import type { NxProfile, ProfileStep } from '../types/profile.ts';
+import type {
+  FanPhase,
+  HeaterPhase,
+  LegacyProfile,
+  LegacyProfileStep,
+  NxProfile,
+} from '../types/profile.ts';
+import { DateTime } from 'luxon';
 
-export const convertToLegacyProfile = (profileDraft: NxProfile) => {
+export const convertNxProfileToLegacyProfile = (profileDraft: NxProfile) => {
   const duration = last(profileDraft.heaterPhases)!.time;
 
   const heaterCurve = getCurveForPoints(
@@ -14,8 +21,8 @@ export const convertToLegacyProfile = (profileDraft: NxProfile) => {
     duration,
   );
 
-  const legacyProfile = {
-    steps: times(duration).map((i): ProfileStep => {
+  return {
+    steps: times(duration).map((i): LegacyProfileStep => {
       const heaterValue = heaterCurve[i]!;
       const previousHeaterValue = heaterCurve[i - 1];
       const duration = previousHeaterValue
@@ -29,5 +36,47 @@ export const convertToLegacyProfile = (profileDraft: NxProfile) => {
       };
     }),
   };
-  return legacyProfile;
+};
+
+export const convertLegacyToNxProfile = (
+  profileDraft: LegacyProfile,
+  options: { name?: string } = {},
+): NxProfile => {
+  const heaterPhases: HeaterPhase[] = [];
+  const fanPhases: FanPhase[] = [];
+
+  if (profileDraft.steps[0]) {
+    heaterPhases.push({
+      time: 0,
+      temperature: profileDraft.steps[0].setpoint,
+    });
+    fanPhases.push({
+      time: 0,
+      fanSpeed: profileDraft.steps[0].fanValue || 50,
+    });
+  }
+  let duration = 0;
+  profileDraft.steps.forEach((step) => {
+    if (!step.duration) return;
+    duration += step.duration;
+    if (isNumber(step.setpoint)) {
+      heaterPhases.push({
+        time: duration,
+        temperature: step.setpoint,
+      });
+    }
+    if (isNumber(step.fanValue)) {
+      fanPhases.push({
+        time: duration,
+        fanSpeed: step.fanValue,
+      });
+    }
+  });
+
+  return {
+    name: `${options.name || `ConvertedProfile_${DateTime.now().toFormat('yyyy-MM-dd_hh-mm')}`}`,
+    fanPhases,
+    heaterPhases,
+    createdAt: DateTime.now().toISOTime(),
+  };
 };

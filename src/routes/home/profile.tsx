@@ -24,6 +24,7 @@ import { get, last } from 'lodash-es';
 import { useAppDispatch, useAppSelector } from '../../state/store.ts';
 import { Actions } from '../../state/actions';
 import { useMemo } from 'react';
+import { convertLegacyToNxProfile } from '../../common/profileUtils.ts';
 
 const DownloadButton: React.FC<{ className?: string }> = ({ className }) => {
   const records = useRecorderRecords();
@@ -60,7 +61,7 @@ const DownloadButton: React.FC<{ className?: string }> = ({ className }) => {
         URL.revokeObjectURL(url);
       }}
     >
-      Download
+      Log
     </Button>
   );
 };
@@ -93,6 +94,15 @@ export const ProfileControls: React.FC = () => {
               if (get(jsonData, 'heaterPhases') && get(jsonData, 'fanPhases')) {
                 dispatch(Actions.setProfile(jsonData));
               }
+              if (get(jsonData, 'steps')) {
+                dispatch(
+                  Actions.setProfile(
+                    convertLegacyToNxProfile(jsonData, {
+                      name: (file.name || '').split('.')[0],
+                    }),
+                  ),
+                );
+              }
             } catch (error) {
               console.log('upload failed:', error);
             }
@@ -110,14 +120,19 @@ export const ProfileControls: React.FC = () => {
             <input {...getInputProps()} />
             <div className={'flex flex-col gap-4'}>
               <div className={'text-center'}>
-                {hasProfiles
-                  ? 'Drop a profile here, click to select a file'
-                  : 'Drop a profile here or click to select a file'}
+                {hasProfiles ? (
+                  <>
+                    Drop a profile here, click this text to select a file or
+                    choose from recent Profiles
+                    <br />
+                    (uses LocalStorage, can disappear any time)
+                  </>
+                ) : (
+                  'Drop a profile here or click to select a file'
+                )}
               </div>
               <div className={'flex flex-col gap-2'}>
-                <div className={'text-center'}>
-                  or choose from recent Profiles
-                </div>
+                <div className={'text-center'}></div>
                 {Object.keys(profiles).map((key) => {
                   const profile = profiles[key];
                   if (!profile) return null;

@@ -1,8 +1,8 @@
-export type Profile = {
-  steps: ProfileStep[];
+export type LegacyProfile = {
+  steps: LegacyProfileStep[];
 };
 
-export type ProfileStep = {
+export type LegacyProfileStep = {
   interpolation?: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out';
   setpoint: number;
   duration: number;

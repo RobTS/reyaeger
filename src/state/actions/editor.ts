@@ -1,12 +1,12 @@
 import { createAction } from '@reduxjs/toolkit';
-import type { ProfileDraftReducerState } from '../reducers/editor/profileDraft.ts';
+import type { NxProfile } from '../../types/profile.ts';
 
 export const resetProfileDraft = createAction<undefined, 'resetProfileDraft'>(
   'resetProfileDraft',
 );
 
 export const prefillProfileDraft = createAction<
-  ProfileDraftReducerState,
+  NxProfile,
   'prefillProfileDraft'
 >('prefillProfileDraft');
 
