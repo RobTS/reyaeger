@@ -185,14 +185,16 @@ export const ProfileControls: React.FC = () => {
       {profile ? (
         <div className={'flex flex-col gap-2 items-center'}>
           <div className={'text-center'}>
-            Profile Duration:{' '}
+            Profile: {profile.name} (
             {Duration.fromDurationLike({
               seconds: Math.max(
                 last(profile.fanPhases)?.time || 0,
                 last(profile.heaterPhases)?.time || 0,
               ),
             }).toFormat('mm:ss')}
+            )
           </div>
+
           <div className={'flex flex-row flex-wrap gap-2'}>
             <Button
               iconLeft={profileExecutionEnabled ? faStop : faPlay}
