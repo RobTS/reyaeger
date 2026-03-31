@@ -39,11 +39,10 @@ const DownloadButton: React.FC<{ className?: string }> = ({ className }) => {
       jsonFile = convertToLegacyProfile(profileDraft);
     } else {
       jsonFile = {
-        id: profileDraft.id,
+        name: profileDraft.name,
         heaterPhases: profileDraft.heaterPhases,
         fanPhases: profileDraft.fanPhases,
         createdAt: profileDraft.createdAt,
-        name: profileDraft.name,
       };
     }
 
@@ -54,7 +53,7 @@ const DownloadButton: React.FC<{ className?: string }> = ({ className }) => {
 
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'profile.json';
+    a.download = `profile_${profileDraft.name.replace(/[^0-9a-z _-]/gi, '').toLowerCase()}.json`;
     a.click();
 
     URL.revokeObjectURL(url);
@@ -69,8 +68,13 @@ const DownloadButton: React.FC<{ className?: string }> = ({ className }) => {
 
 export const BezierCurveEditor: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { heaterPhases, fanPhases, referenceFanPhases, referenceHeaterPhases } =
-    useAppSelector((s) => s.editor.profileDraft);
+  const {
+    heaterPhases,
+    fanPhases,
+    referenceFanPhases,
+    referenceHeaterPhases,
+    name,
+  } = useAppSelector((s) => s.editor.profileDraft);
   const [activePhase, setActivePhase] = useState<
     { type: 'heater' | 'fan'; index: number } | undefined
   >(undefined);
@@ -527,112 +531,126 @@ export const BezierCurveEditor: React.FC = () => {
 
   return (
     <div ref={containerRef} className="flex flex-col w-full gap-4">
-      <div className={'flex flex-row justify-end gap-2 flex-wrap'}>
-        <Button
-          iconLeft={faTrash}
-          onClick={() => dispatch(Actions.resetProfileDraft())}
-        >
-          Reset
-        </Button>
-        <div className={'flex flex-row'}>
+      <div className="flex flex-row justify-between flex-wrap gap-4">
+        <input
+          type={'text'}
+          onChange={(e) =>
+            dispatch(Actions.setProfileName({ name: e.target.value }))
+          }
+          value={name}
+          className={
+            'max-md:w-full lg:w-50 bg-transparent placeholder:text-slate-400 text-slate-700 text-sm border border-gray-300 rounded-md px-3 py-2 transition duration-300 ease focus:outline-none focus:border-slate-400 hover:border-slate-300 shadow-sm focus:shadow'
+          }
+        />
+        <div className={'flex flex-row gap-2 gap-y-4 flex-wrap'}>
           <Button
-            iconLeft={faFire}
-            iconRight={faPlus}
-            className={'rounded-r-none border-r-0'}
-            onClick={() =>
-              dispatch(
-                Actions.addHeaterPhase({
-                  index:
-                    activePhase?.type === 'heater'
-                      ? activePhase.index
-                      : undefined,
-                }),
-              )
-            }
+            iconLeft={faTrash}
+            onClick={() => dispatch(Actions.resetProfileDraft())}
           >
-            Heater
+            Reset
           </Button>
-          <Button
-            iconRight={faMinus}
-            className={'rounded-l-none'}
-            onClick={() =>
-              dispatch(
-                Actions.removeHeaterPhase({
-                  index:
-                    activePhase?.type === 'heater'
-                      ? activePhase.index
-                      : heaterPhases.length - 1,
-                }),
-              )
-            }
-          />
-        </div>
-        <div className={'flex flex-row'}>
-          <Button
-            iconLeft={faFan}
-            iconRight={faPlus}
-            className={'rounded-r-none border-r-0'}
-            onClick={() =>
-              dispatch(
-                Actions.addFanPhase({
-                  index:
-                    activePhase?.type === 'fan' ? activePhase.index : undefined,
-                }),
-              )
-            }
-          >
-            Fan
-          </Button>
-          <Button
-            iconRight={faMinus}
-            className={'rounded-l-none'}
-            onClick={() =>
-              dispatch(
-                Actions.removeFanPhase({
-                  index:
-                    activePhase?.type === 'fan'
-                      ? activePhase.index
-                      : heaterPhases.length - 1,
-                }),
-              )
-            }
-          />
-        </div>
-        <Dropzone
-          onDrop={(acceptedFiles) => {
-            const file = acceptedFiles[0];
-            if (!file) {
-              return;
-            }
-            const reader = new FileReader();
-
-            reader.onload = (e) => {
-              try {
-                // eslint-disable-next-line
-                const jsonData = JSON.parse(e.target?.result as string) ;
-                if (
-                  get(jsonData, 'heaterPhases') &&
-                  get(jsonData, 'fanPhases')
-                ) {
-                  dispatch(Actions.prefillProfileDraft(jsonData));
-                }
-              } catch (error) {
-                console.log('upload failed:', error);
+          <div className={'flex flex-row'}>
+            <Button
+              iconLeft={faFire}
+              iconRight={faPlus}
+              className={'rounded-r-none border-r-0'}
+              onClick={() =>
+                dispatch(
+                  Actions.addHeaterPhase({
+                    index:
+                      activePhase?.type === 'heater'
+                        ? activePhase.index
+                        : undefined,
+                  }),
+                )
               }
-            };
-            reader.readAsText(file);
-          }}
-        >
-          {({ getRootProps, getInputProps }) => (
-            <div {...getRootProps()}>
-              <input {...getInputProps()} />
-              <Button iconLeft={faUpload} className={'text-center'}>
-                Upload
-              </Button>
-            </div>
-          )}
-        </Dropzone>
-        <DownloadButton />
+            >
+              Heater
+            </Button>
+            <Button
+              iconRight={faMinus}
+              className={'rounded-l-none'}
+              onClick={() =>
+                dispatch(
+                  Actions.removeHeaterPhase({
+                    index:
+                      activePhase?.type === 'heater'
+                        ? activePhase.index
+                        : heaterPhases.length - 1,
+                  }),
+                )
+              }
+            />
+          </div>
+          <div className={'flex flex-row'}>
+            <Button
+              iconLeft={faFan}
+              iconRight={faPlus}
+              className={'rounded-r-none border-r-0'}
+              onClick={() =>
+                dispatch(
+                  Actions.addFanPhase({
+                    index:
+                      activePhase?.type === 'fan'
+                        ? activePhase.index
+                        : undefined,
+                  }),
+                )
+              }
+            >
+              Fan
+            </Button>
+            <Button
+              iconRight={faMinus}
+              className={'rounded-l-none'}
+              onClick={() =>
+                dispatch(
+                  Actions.removeFanPhase({
+                    index:
+                      activePhase?.type === 'fan'
+                        ? activePhase.index
+                        : heaterPhases.length - 1,
+                  }),
+                )
+              }
+            />
+          </div>
+          <Dropzone
+            onDrop={(acceptedFiles) => {
+              const file = acceptedFiles[0];
+              if (!file) {
+                return;
+              }
+              const reader = new FileReader();
+
+              reader.onload = (e) => {
+                try {
+                  // eslint-disable-next-line
+                  const jsonData = JSON.parse(e.target?.result as string) ;
+                  if (
+                    get(jsonData, 'heaterPhases') &&
+                    get(jsonData, 'fanPhases')
+                  ) {
+                    dispatch(Actions.prefillProfileDraft(jsonData));
+                  }
+                } catch (error) {
+                  console.log('upload failed:', error);
+                }
+              };
+              reader.readAsText(file);
+            }}
+          >
+            {({ getRootProps, getInputProps }) => (
+              <div {...getRootProps()}>
+                <input {...getInputProps()} />
+                <Button iconLeft={faUpload} className={'text-center'}>
+                  Upload
+                </Button>
+              </div>
+            )}
+          </Dropzone>
+          <DownloadButton />
+        </div>
       </div>
       <canvas
         ref={canvasRef}

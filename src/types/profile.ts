@@ -20,11 +20,8 @@ export interface FanPhase {
 }
 
 export interface NxProfile {
-  id: string;
   name: string;
-  targetTemperature: number;
-  targetTime: number; // seconds
+  createdAt?: string;
   heaterPhases: HeaterPhase[];
   fanPhases: FanPhase[];
-  createdAt: string;
 }

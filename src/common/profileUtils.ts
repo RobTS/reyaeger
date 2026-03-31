@@ -1,11 +1,8 @@
-import type { ProfileDraftReducerState } from '../state/reducers/editor/profileDraft.ts';
 import { last, times } from 'lodash-es';
 import { getCurveForPoints } from './splineUtils.ts';
-import type { ProfileStep } from '../types/profile.ts';
+import type { NxProfile, ProfileStep } from '../types/profile.ts';
 
-export const convertToLegacyProfile = (
-  profileDraft: ProfileDraftReducerState,
-) => {
+export const convertToLegacyProfile = (profileDraft: NxProfile) => {
   const duration = last(profileDraft.heaterPhases)!.time;
 
   const heaterCurve = getCurveForPoints(

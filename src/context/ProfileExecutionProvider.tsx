@@ -4,7 +4,6 @@ import {
   ProfileExecutionContext,
   type ProfileExecutionContextType,
 } from './ProfileExecutionContext.ts';
-import type { Profile } from '../types/profile.ts';
 import { ProfileProcessor } from '../common/profileProcessor.ts';
 import { DateTime } from 'luxon';
 import {
@@ -13,13 +12,14 @@ import {
   usePidControlStatus,
 } from '../hooks/usePidControl.ts';
 import { useYaegerCommands, useYaegerLastMessage } from '../hooks/useYaeger.ts';
+import { useAppSelector } from '../state/store.ts';
 
 type Props = {
   children: React.ReactNode;
 };
 
 export const ProfileExecutionProvider: React.FC<Props> = ({ children }) => {
-  const [profile, setProfile] = useState<Profile | undefined>(undefined);
+  const profile = useAppSelector((s) => s.profile.selectedProfile.profile);
   const [startDate, setStartDate] = useState<DateTime | undefined>();
   const setSetpoint = usePidControlSetpoint()[1];
   const setPidEnabled = usePidControlStatus()[1];
@@ -65,13 +65,11 @@ export const ProfileExecutionProvider: React.FC<Props> = ({ children }) => {
 
   const providerProps = useMemo((): ProfileExecutionContextType => {
     return {
-      profile,
-      setProfile,
       start,
       stop,
       enabled: !!startDate,
     };
-  }, [profile, start, startDate, stop]);
+  }, [start, startDate, stop]);
 
   return (
     <ProfileExecutionContext.Provider value={providerProps}>

@@ -1,9 +1,11 @@
 import { combineReducers } from '@reduxjs/toolkit';
 import { Actions } from '../actions';
 import { editorReducer } from './editor';
+import { profileReducer } from './profile';
 
 const appReducer = combineReducers({
   editor: editorReducer,
+  profile: profileReducer,
 });
 
 // wrapper to allow central store reset, inspired by https://stackoverflow.com/questions/35622588/how-to-reset-the-state-of-a-redux-store

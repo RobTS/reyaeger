@@ -50,3 +50,17 @@ export const removeHeaterPhase = createAction<
   },
   'removeHeaterPhase'
 >('removeHeaterPhase');
+
+export const setProfileName = createAction<
+  {
+    name: string;
+  },
+  'setProfileName'
+>('setProfileName');
+
+export const setProfileDuration = createAction<
+  {
+    durationSeconds: number;
+  },
+  'setProfileDuration'
+>('setProfileDuration');

@@ -2,11 +2,12 @@ import * as React from 'react';
 import cx from 'classnames';
 import type { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { type MouseEventHandler } from 'react';
 
 type Props = {
   iconLeft?: IconDefinition;
   iconRight?: IconDefinition;
-  onClick?: () => void;
+  onClick?: MouseEventHandler<HTMLButtonElement> | undefined;
   type?: 'primary' | 'default' | 'text';
   children?: React.ReactNode | React.ReactNode[];
   className?: string;

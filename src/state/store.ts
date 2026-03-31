@@ -7,12 +7,11 @@ import {
 import { rootReducer } from './reducers';
 import { createLogger } from 'redux-logger';
 import { Environment } from '../common/env.ts';
-import type { ProfileDraftReducerState } from './reducers/editor/profileDraft.ts';
 
-const DRAFT_KEY = 'profileDraft-0.0.1';
+const STATE_KEY = 'appState';
 
 export const createStore = () => {
-  const stringifiedDraft = localStorage.getItem(DRAFT_KEY);
+  const stringifiedDraft = localStorage.getItem(STATE_KEY);
   const draftState = stringifiedDraft
     ? JSON.parse(stringifiedDraft)
     : undefined;
@@ -22,13 +21,11 @@ export const createStore = () => {
       if (Environment.isProduction()) return gDM();
       return gDM().concat(createLogger({}));
     },
-    preloadedState: {
-      editor: { profileDraft: draftState as ProfileDraftReducerState },
-    },
+    preloadedState: draftState,
   });
   store.subscribe(() => {
     const state = store.getState();
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(state.editor.profileDraft));
+    localStorage.setItem(STATE_KEY, JSON.stringify(state));
   });
   return store;
 };

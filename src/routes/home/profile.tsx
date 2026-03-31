@@ -3,7 +3,6 @@ import Dropzone from 'react-dropzone';
 import {
   useProfileExecutionCommands,
   useProfileExecutionEnabled,
-  useProfileExecutionProfile,
 } from '../../hooks/useProfileExecution.ts';
 import {
   useRecorderCommands,
@@ -18,22 +17,23 @@ import {
   faPlay,
   faSnowflake,
   faStop,
+  faTrash,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
-import { get } from 'lodash-es';
-import { convertToLegacyProfile } from '../../common/profileUtils.ts';
+import { get, last } from 'lodash-es';
+import { useAppDispatch, useAppSelector } from '../../state/store.ts';
+import { Actions } from '../../state/actions';
+import { useMemo } from 'react';
 
 const DownloadButton: React.FC<{ className?: string }> = ({ className }) => {
   const records = useRecorderRecords();
   const events = useRecorderEvents();
-  const [profile] = useProfileExecutionProfile();
-
+  const profile = useAppSelector((s) => s.profile.selectedProfile.profile);
   return (
     <Button
       iconLeft={faDownload}
       className={className}
       onClick={() => {
-        console.log('download');
         const blob = new Blob(
           [
             JSON.stringify({
@@ -54,7 +54,7 @@ const DownloadButton: React.FC<{ className?: string }> = ({ className }) => {
 
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'roast.json';
+        a.download = `roast_${profile?.name || 'no_profile'}_${DateTime.now().toFormat('yyyy-MM-DD_hh-mm-ss')}.json`;
         a.click();
 
         URL.revokeObjectURL(url);
@@ -66,7 +66,11 @@ const DownloadButton: React.FC<{ className?: string }> = ({ className }) => {
 };
 
 export const ProfileControls: React.FC = () => {
-  const [profile, setProfile] = useProfileExecutionProfile();
+  const profile = useAppSelector((s) => s.profile.selectedProfile.profile);
+  const profiles = useAppSelector((s) => s.profile.storedProfiles);
+  const hasProfiles = useMemo(() => !!Object.keys(profiles).length, [profiles]);
+
+  const dispatch = useAppDispatch();
   const profileExecutionEnabled = useProfileExecutionEnabled();
   const { start: startProfile, stop: stopProfile } =
     useProfileExecutionCommands();
@@ -86,9 +90,8 @@ export const ProfileControls: React.FC = () => {
             try {
               // eslint-disable-next-line
               const jsonData = JSON.parse(e.target?.result as string) ;
-              if (get(jsonData, 'steps')) setProfile(jsonData);
               if (get(jsonData, 'heaterPhases') && get(jsonData, 'fanPhases')) {
-                setProfile(convertToLegacyProfile(jsonData));
+                dispatch(Actions.setProfile(jsonData));
               }
             } catch (error) {
               console.log('upload failed:', error);
@@ -105,8 +108,44 @@ export const ProfileControls: React.FC = () => {
             }
           >
             <input {...getInputProps()} />
-            <div className={'text-center'}>
-              Drop a profile here, or click to select a file
+            <div className={'flex flex-col gap-4'}>
+              <div className={'text-center'}>
+                {hasProfiles
+                  ? 'Drop a profile here, click to select a file'
+                  : 'Drop a profile here or click to select a file'}
+              </div>
+              <div className={'flex flex-col gap-2'}>
+                <div className={'text-center'}>
+                  or choose from recent Profiles
+                </div>
+                {Object.keys(profiles).map((key) => {
+                  const profile = profiles[key];
+                  if (!profile) return null;
+                  return (
+                    <div className={'flex flex-row'} key={profile.name}>
+                      <Button
+                        className={'flex-1 rounded-r-none'}
+                        onClick={(e) => {
+                          dispatch(Actions.setProfile(profile));
+                          e.stopPropagation();
+                        }}
+                      >
+                        {profile.name}
+                      </Button>
+                      <Button
+                        className={'rounded-l-none border-l-0'}
+                        iconLeft={faTrash}
+                        onClick={(e) => {
+                          dispatch(
+                            Actions.removeStoredProfile({ name: profile.name }),
+                          );
+                          e.stopPropagation();
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
@@ -122,7 +161,7 @@ export const ProfileControls: React.FC = () => {
       {profile && !profileExecutionEnabled ? (
         <div
           className={'absolute top-2 right-2 cursor-pointer'}
-          onClick={() => setProfile(undefined)}
+          onClick={() => dispatch(Actions.setProfile())}
         >
           <FontAwesomeIcon icon={faXmark} size="lg" />
         </div>
@@ -133,10 +172,10 @@ export const ProfileControls: React.FC = () => {
           <div className={'text-center'}>
             Profile Duration:{' '}
             {Duration.fromDurationLike({
-              seconds: profile.steps.reduce((acc, step) => {
-                acc += step.duration;
-                return acc;
-              }, 0),
+              seconds: Math.max(
+                last(profile.fanPhases)?.time || 0,
+                last(profile.heaterPhases)?.time || 0,
+              ),
             }).toFormat('mm:ss')}
           </div>
           <div className={'flex flex-row flex-wrap gap-2'}>

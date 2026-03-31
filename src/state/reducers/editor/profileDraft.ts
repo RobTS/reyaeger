@@ -5,12 +5,12 @@ import type { FanPhase, HeaterPhase } from '../../../types/profile.ts';
 import { Actions } from '../../actions';
 
 export type ProfileDraftReducerState = {
-  id: string;
   name: string;
   heaterPhases: HeaterPhase[];
   referenceHeaterPhases?: HeaterPhase[];
   fanPhases: FanPhase[];
   referenceFanPhases?: FanPhase[];
+  durationSeconds: number;
   createdAt: string;
 };
 
@@ -76,8 +76,10 @@ export const profileDraftReducer = createReducer<ProfileDraftReducerState>(
   {
     ...DEFAULT_VALUES,
     createdAt: DateTime.now().toISOTime(),
-
-    id: uuidv4(),
+    durationSeconds: Math.max(
+      ...DEFAULT_VALUES.heaterPhases.map((h) => h.time),
+      ...DEFAULT_VALUES.fanPhases.map((f) => f.time),
+    ),
     name: 'New Profile',
   },
   (builder) =>
@@ -185,10 +187,13 @@ export const profileDraftReducer = createReducer<ProfileDraftReducerState>(
       .addCase(Actions.resetProfileDraft, () => {
         return {
           ...DEFAULT_VALUES,
-          createdAt: DateTime.now().toISOTime(),
-
           id: uuidv4(),
           name: 'New Profile',
+          createdAt: DateTime.now().toISOTime(),
+          durationSeconds: Math.max(
+            ...DEFAULT_VALUES.heaterPhases.map((h) => h.time),
+            ...DEFAULT_VALUES.fanPhases.map((f) => f.time),
+          ),
         };
       })
       .addCase(Actions.prefillProfileDraft, (_state, action) => {
@@ -197,5 +202,8 @@ export const profileDraftReducer = createReducer<ProfileDraftReducerState>(
           referenceFanPhases: action.payload.fanPhases,
           referenceHeaterPhases: action.payload.heaterPhases,
         };
+      })
+      .addCase(Actions.setProfileName, (state, action) => {
+        state.name = action.payload.name;
       }),
 );
