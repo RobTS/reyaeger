@@ -88,13 +88,17 @@ export class PidAutoTune {
   private calcPid(pos: number): PidData {
     const tempDiff = this.peaks[pos]!.temp - this.peaks[pos - 1]!.temp;
     const timeDiff = this.peaks[pos]!.time.diff(this.peaks[pos - 2]!.time).as(
-      'milliseconds',
+      'seconds',
     );
+    console.log(`Tempdiff: ${tempDiff}`);
+    console.log(`Timediff: ${timeDiff}`);
 
     // Use Astrom-Hagglund method to estimate Ku and Tu
     const amplitude = 0.5 * Math.abs(tempDiff);
     const Ku = (4 * this.heaterMaxPower) / (Math.PI * amplitude);
     const Tu = timeDiff;
+    console.log(`Ku: ${Ku}`);
+    console.log(`Tu: ${Tu}`);
 
     // Use Ziegler-Nichols method to generate PID parameters
     const Ti = 0.5 * Tu;
@@ -102,7 +106,6 @@ export class PidAutoTune {
     const Kp = 0.6 * Ku * 100;
     const Ki = Kp / Ti;
     const Kd = Kp * Td;
-
     console.log(
       `Autotune: raw=${tempDiff}/${this.heaterMaxPower} Ku=${Ku} Tu=${Tu}  Kp=${Kp} Ki=${Ki} Kd=${Kd}`,
     );
@@ -119,7 +122,7 @@ export class PidAutoTune {
     for (let pos = 4; pos < this.peaks.length; pos++) {
       const cycleTime = this.peaks[pos]!.time.diff(
         this.peaks[pos - 2]!.time,
-      ).as('milliseconds');
+      ).as('seconds');
       cycleTimes.push([cycleTime, pos]);
     }
 

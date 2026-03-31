@@ -29,6 +29,15 @@ export const SettingsPage: React.FC = () => {
     setPidKi(pidValues.pidKi);
     setPidKd(pidValues.pidKd);
   }, [pidValues]);
+
+  useEffect(() => {
+    if (!tuningResult) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPidKp(tuningResult.kp);
+    setPidKi(tuningResult.ki);
+    setPidKd(tuningResult.kd);
+  }, [tuningResult]);
+
   return (
     <Layout>
       <div className={'flex flex-row gap-4'}>
@@ -111,7 +120,9 @@ export const SettingsPage: React.FC = () => {
               {tuning ? 'Tuning...' : 'Tune PID'}
             </Button>
           ) : null}
-          {tuningResult ? <div>{JSON.stringify(tuningResult)}</div> : null}
+          {tuningResult ? (
+            <div className={'text-center'}>Click save to persist</div>
+          ) : null}
         </div>
       </div>
     </Layout>
