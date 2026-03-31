@@ -219,7 +219,7 @@ export class PidAutoTune2 {
     this._input = currentInput; // Store the current input value
 
     if (this._operationalMode === 'Tune') {
-      this.performAutoTune(currentInput);
+      this.performAutoTune();
     } else if (this._operationalMode === 'Manual') {
       // Manual mode: direct output control, bypass PID calculations
       this._output = this.map(
@@ -280,7 +280,7 @@ export class PidAutoTune2 {
   }
 
   // Private methods
-  private performAutoTune(currentInput: number): void {
+  private performAutoTune(): void {
     // Using static-like behavior with object properties
     if (!this._autoTuneState) {
       this._autoTuneState = {
