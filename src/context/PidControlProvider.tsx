@@ -4,14 +4,13 @@ import {
   PidControlContext,
   type PidControlContextType,
 } from './PidControlContext.ts';
-import { PidController } from '../common/pid.ts';
 import {
-  useYaegerLastMessage,
   useYaegerCommands,
+  useYaegerLastMessage,
   useYaegerPidValues,
 } from '../hooks/useYaeger.ts';
 import type { PidData, PidReference } from '../types/pid.ts';
-import { PidAutoTune } from '../common/pidTune.ts';
+import { PidAutoTune2 } from '../common/pidControl.ts';
 
 type Props = {
   children: React.ReactNode;
@@ -30,36 +29,27 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
   const yaegerValues = useYaegerPidValues();
   const lastMessage = useYaegerLastMessage();
 
-  const controller = useMemo(
-    () =>
-      new PidController({
-        kp: yaegerValues?.pidKp || 0,
-        ki: yaegerValues?.pidKi || 0,
-        kd: yaegerValues?.pidKd || 0,
-      }),
-    [yaegerValues],
-  );
+  const controller = useMemo(() => {
+    const pid = new PidAutoTune2(0, 100, 'ZieglerNichols');
+    pid.setManualGains(
+      yaegerValues?.pidKp || 1,
+      yaegerValues?.pidKi || 0,
+      yaegerValues?.pidKd || 0,
+    );
+    pid.enableAntiWindup(true, 0.8);
+    pid.setOscillationMode('Normal');
+    pid.setOperationalMode('Normal');
+    return pid;
+  }, [yaegerValues]);
 
-  const pidTune = useMemo(() => {
-    if (!tuneEnabled) return;
-    return new PidAutoTune({
-      setPidEnabled: setEnabled,
-      setHeaterPercentage: (temp) => sendCommand({ BurnerVal: temp }),
-      setFanSpeed: (fanVal) => sendCommand({ FanVal: fanVal }),
-      calibrationTemp: 140,
-      calibrationFanSpeed: 85,
-    });
-  }, [sendCommand, tuneEnabled]);
+  useEffect(() => {
+    controller.setSetpoint(setpoint);
+  }, [controller, setpoint]);
 
   useEffect(() => {
     if (!enabled) return;
-    if (pidTune) return;
     if (!controller) return;
     if (!lastMessage) return;
-    if (setpoint === 0) {
-      sendCommand({ BurnerVal: 0 });
-      return;
-    }
     const bt = lastMessage.message.BT;
     const et = lastMessage.message.ET;
 
@@ -69,33 +59,24 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
         : referenceValue === 'ET'
           ? et
           : Math.max(bt, et);
-    const newBurnerVal = Math.max(
-      Math.min(controller.compute(setpoint, temp), 100),
-      0,
-    );
+    controller.update(temp);
+    const newBurnerVal = controller.getOutput();
     sendCommand({ BurnerVal: newBurnerVal });
-  }, [
-    controller,
-    enabled,
-    lastMessage,
-    pidTune,
-    referenceValue,
-    sendCommand,
-    setpoint,
-  ]);
+  }, [controller, enabled, lastMessage, referenceValue, sendCommand]);
 
   useEffect(() => {
-    if (!pidTune) return;
-    if (!lastMessage) return;
-    pidTune.temperatureUpdate(lastMessage.time, lastMessage.message.ET);
-    const result = pidTune.checkForCompletion();
-    if (!result) return;
-    console.log('Final result', result);
+    if (!tuneEnabled) return;
+    if (controller.getOperationalMode() === 'Tune') return;
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setTuningResult(result);
+    setTuningResult({
+      kp: controller.getKp(),
+      ki: controller.getKi(),
+      kd: controller.getKd(),
+    });
     setTuneEnabled(false);
-  }, [lastMessage, pidTune, setpoint]);
+    sendCommand({ BurnerVal: 0 });
+  }, [controller, sendCommand, tuneEnabled, lastMessage]);
 
   useEffect(() => {
     if (enabled) return;
@@ -103,8 +84,27 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
   }, [enabled, sendCommand]);
 
   const resetPid = useCallback(() => {
-    controller?.reset();
+    controller.setOperationalMode('Hold');
+    controller.setOperationalMode('Normal');
   }, [controller]);
+
+  const enableTune = useCallback(
+    (enabled: boolean) => {
+      setTuneEnabled(enabled);
+      if (enabled) {
+        sendCommand({ FanVal: 65 });
+        setSetpoint(160);
+        controller.setSetpoint(160);
+        controller.setOperationalMode('Tune');
+      } else {
+        sendCommand({ FanVal: 50 });
+        setSetpoint(0);
+        controller.setSetpoint(0);
+        controller.setOperationalMode('Normal');
+      }
+    },
+    [controller, sendCommand],
+  );
 
   const providerProps =
     useMemo<PidControlContextType>((): PidControlContextType => {
@@ -112,7 +112,7 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
         enabled,
         setEnabled,
         tuneEnabled,
-        setTuneEnabled,
+        setTuneEnabled: enableTune,
         resetPid,
         tuningResult,
         setpoint,
@@ -121,6 +121,7 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
         setReferenceValue,
       };
     }, [
+      enableTune,
       enabled,
       referenceValue,
       resetPid,
