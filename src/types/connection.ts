@@ -2,13 +2,17 @@
 import type { DateTime } from 'luxon';
 import type { PidData } from './pid.ts';
 
-export type YaegerMessage = YaegerPidMessage | YaegerStatusMessage;
+export type YaegerMessage = YaegerPreferencesMessage | YaegerStatusMessage;
 
-export type YaegerPidMessage = {
-  type: 'pid';
+export type YaegerPreferences = {
   pidKp: number;
   pidKi: number;
   pidKd: number;
+  cooldownFanSpeed?: number;
+};
+
+export type YaegerPreferencesMessage = YaegerPreferences & {
+  type: 'preferences';
   id: number;
 };
 

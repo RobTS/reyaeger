@@ -30,7 +30,10 @@ export const useYaegerCommands = () => {
   if (context === undefined) {
     throw new Error('useYaeger must be used within a YaegerConnectionProvider');
   }
-  return { sendCommand: context.sendCommand, updatePid: context.updatePidInfo };
+  return {
+    sendCommand: context.sendCommand,
+    setPreferences: context.setPreferences,
+  };
 };
 
 export const useYaegerError = () => {
@@ -41,10 +44,10 @@ export const useYaegerError = () => {
   return context.error;
 };
 
-export const useYaegerPidValues = () => {
+export const useYaegerPreferences = () => {
   const context = useContext(YaegerConnectionContext);
   if (context === undefined) {
     throw new Error('useYaeger must be used within a YaegerConnectionProvider');
   }
-  return context.pidInfo;
+  return context.preferences;
 };

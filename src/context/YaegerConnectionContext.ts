@@ -1,9 +1,9 @@
 import { createContext } from 'react';
 import type {
   YaegerMessageWrapper,
-  YaegerPidMessage,
+  YaegerPreferences,
+  YaegerPreferencesMessage,
 } from '../types/connection.ts';
-import type { PidData } from '../types/pid.ts';
 
 export type WsStatus = 'disconnected' | 'error' | 'pending' | 'connected';
 
@@ -13,8 +13,8 @@ export type ConnectionContextType = {
   lastMessage: YaegerMessageWrapper | undefined;
   sendCommand: (command: { BurnerVal?: number; FanVal?: number }) => void;
   error: Error | undefined;
-  pidInfo: YaegerPidMessage | undefined;
-  updatePidInfo: (pidData: PidData) => void;
+  preferences: YaegerPreferencesMessage | undefined;
+  setPreferences: (preferences: Partial<YaegerPreferences>) => void;
 };
 
 export const YaegerConnectionContext = createContext<ConnectionContextType>({
@@ -25,8 +25,8 @@ export const YaegerConnectionContext = createContext<ConnectionContextType>({
     throw new Error('ConnectionContextProvider not found');
   },
   error: undefined,
-  pidInfo: undefined,
-  updatePidInfo: () => {
+  preferences: undefined,
+  setPreferences: () => {
     throw new Error('ConnectionContextProvider not found');
   },
 });

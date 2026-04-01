@@ -10,7 +10,7 @@ import type { RoastEvent, YaegerMessageWrapper } from '../types/connection.ts';
 import { usePidControlSetpoint } from '../hooks/usePidControl.ts';
 import {
   useYaegerLastMessage,
-  useYaegerPidValues,
+  useYaegerPreferences,
 } from '../hooks/useYaeger.ts';
 
 type Props = {
@@ -24,7 +24,7 @@ export const RecorderProvider: React.FC<Props> = ({ children }) => {
   const [startDate, setStartDate] = useState<DateTime>();
   const [setpoint] = usePidControlSetpoint();
   const lastMessage = useYaegerLastMessage();
-  const pidData = useYaegerPidValues();
+  const preferences = useYaegerPreferences();
 
   const start = useCallback(() => {
     console.log('Starting recorder');
@@ -64,17 +64,17 @@ export const RecorderProvider: React.FC<Props> = ({ children }) => {
           ...lastMessage,
           extra: {
             setpoint,
-            pidData: pidData
+            pidData: preferences
               ? {
-                  kp: pidData?.pidKp,
-                  ki: pidData?.pidKi,
-                  kd: pidData?.pidKd,
+                  kp: preferences?.pidKp,
+                  ki: preferences?.pidKi,
+                  kd: preferences?.pidKd,
                 }
               : undefined,
           },
         },
       ]);
-  }, [lastMessage, pidData, recording, records, setpoint]);
+  }, [lastMessage, preferences, recording, records, setpoint]);
 
   const providerProps = useMemo<RecorderContextType>(() => {
     return {

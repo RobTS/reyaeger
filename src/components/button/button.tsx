@@ -30,6 +30,7 @@ export const Button: React.FC<Props> = ({
         type === 'primary'
           ? 'bg-amber-400 shadow'
           : 'border border-gray-400 bg-white shadow',
+        disabled ? 'opacity-50' : '',
         className,
       )}
       onClick={onClick}

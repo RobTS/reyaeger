@@ -9,9 +9,9 @@ import { DateTime } from 'luxon';
 import type {
   YaegerMessage,
   YaegerMessageWrapper,
-  YaegerPidMessage,
+  YaegerPreferences,
+  YaegerPreferencesMessage,
 } from '../types/connection.ts';
-import type { PidData } from '../types/pid.ts';
 
 type Props = {
   host: string;
@@ -28,7 +28,9 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
   const [lastMessage, setLastMessage] = useState<
     YaegerMessageWrapper | undefined
   >();
-  const [pidInfo, setPidInfo] = useState<YaegerPidMessage | undefined>();
+  const [preferences, setPreferences] = useState<
+    YaegerPreferencesMessage | undefined
+  >();
   const [error, setError] = useState<Error | undefined>();
   const commandsToSend = useRef<
     { BurnerVal?: number; FanVal?: number } | undefined
@@ -46,7 +48,7 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
       websocket.send(
         JSON.stringify({
           id: DateTime.now().toMillis(),
-          command: 'getPid',
+          command: 'getPreferences',
         }),
       );
     };
@@ -58,9 +60,9 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
           if (message.type === 'status') {
             setLastMessage({ time: DateTime.now(), message });
           }
-          if (message.type === 'pid') {
+          if (message.type === 'preferences') {
             console.log('Received message', message);
-            setPidInfo(message);
+            setPreferences(message);
           }
         }
       } catch (error) {
@@ -112,15 +114,13 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
     [],
   );
 
-  const updatePidInfo = useCallback(
-    (pid: PidData) => {
+  const savePreferences = useCallback(
+    (preferences: Partial<YaegerPreferences>) => {
       ws?.send(
         JSON.stringify({
           id: DateTime.now().toMillis(),
-          command: 'setPid',
-          pidKp: pid.kp,
-          pidKi: pid.ki,
-          pidKd: pid.kd,
+          command: 'setPreferences',
+          ...preferences,
         }),
       );
     },
@@ -134,8 +134,8 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
       lastMessage,
       sendCommand,
       error,
-      pidInfo,
-      updatePidInfo: updatePidInfo,
+      preferences,
+      setPreferences: savePreferences,
     };
   }, [
     status,
@@ -143,8 +143,8 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
     lastMessage,
     sendCommand,
     error,
-    pidInfo,
-    updatePidInfo,
+    preferences,
+    savePreferences,
   ]);
 
   return (

@@ -7,7 +7,7 @@ import {
 import {
   useYaegerCommands,
   useYaegerLastMessage,
-  useYaegerPidValues,
+  useYaegerPreferences,
 } from '../hooks/useYaeger.ts';
 import type { PidData, PidReference } from '../types/pid.ts';
 import { PidAutoTune2 } from '../common/pidControl.ts';
@@ -19,6 +19,7 @@ type Props = {
 export const PidControlProvider: React.FC<Props> = ({ children }) => {
   const [setpoint, setSetpoint] = useState<number>(0);
   const [enabled, setEnabled] = useState(true);
+  const yaegerPreferences = useYaegerPreferences();
   const [tuneEnabled, setTuneEnabled] = useState(false);
   const [tuningResult, setTuningResult] = useState<PidData | undefined>(
     undefined,
@@ -26,11 +27,11 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
 
   const [referenceValue, setReferenceValue] = useState<PidReference>('ET');
   const { sendCommand } = useYaegerCommands();
-  const yaegerValues = useYaegerPidValues();
+  const yaegerValues = useYaegerPreferences();
   const lastMessage = useYaegerLastMessage();
 
   const controller = useMemo(() => {
-    const pid = new PidAutoTune2(0, 100, 'ZieglerNichols');
+    const pid = new PidAutoTune2(0, 100, 'LambdaTuning');
     pid.setManualGains(
       yaegerValues?.pidKp || 1,
       yaegerValues?.pidKi || 0,
@@ -75,7 +76,7 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
       kd: controller.getKd(),
     });
     setTuneEnabled(false);
-    sendCommand({ BurnerVal: 0 });
+    setSetpoint(0);
   }, [controller, sendCommand, tuneEnabled, lastMessage]);
 
   useEffect(() => {
@@ -92,9 +93,9 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
     (enabled: boolean) => {
       setTuneEnabled(enabled);
       if (enabled) {
-        sendCommand({ FanVal: 65 });
-        setSetpoint(160);
-        controller.setSetpoint(160);
+        sendCommand({ FanVal: 80 });
+        setSetpoint(140);
+        controller.setSetpoint(140);
         controller.setOperationalMode('Tune');
       } else {
         sendCommand({ FanVal: 50 });
@@ -103,7 +104,7 @@ export const PidControlProvider: React.FC<Props> = ({ children }) => {
         controller.setOperationalMode('Normal');
       }
     },
-    [controller, sendCommand],
+    [controller, sendCommand, yaegerPreferences?.cooldownFanSpeed],
   );
 
   const providerProps =
