@@ -91,8 +91,8 @@ wss.on('connection', (ws: WebSocket) => {
           command: { ...(lastSetting ? lastSetting.command : {}), ...payload },
         };
       }
-      if (['setPid', 'getPid'].includes(payload.command)) {
-        if (payload.command === 'setPid') {
+      if (['setPreferences', 'getPreferences'].includes(payload.command)) {
+        if (payload.command === 'setPreferences') {
           pidValues.pidKp = payload.pidKp;
           pidValues.pidKi = payload.pidKi;
           pidValues.pidKd = payload.pidKd;
@@ -100,7 +100,7 @@ wss.on('connection', (ws: WebSocket) => {
         ws.send(
           JSON.stringify({
             data: {
-              type: 'pid',
+              type: 'preferences',
               ...pidValues,
             },
           }),
