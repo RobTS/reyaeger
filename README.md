@@ -19,7 +19,7 @@ This is an alternative frontend for the Yaeger roaster firmware. It can be hoste
 
 # Install
 
-While I work with [@tadelv](https://github.com/tadelv) to integrate this frontend with yaeger in a clean way, you can use this [fork & branch](https://github.com/RobTS/yaeger/tree/chore/reyaeger-extensions) to build and flash everything using the familiar `build_and_flash.sh` script (choose `r` for reyaeger when prompted).
+You can build and flash everything using the familiar `build_and_flash.sh` script of yaeger (choose `r` for reyaeger when prompted).
 
 ## Manual install
 
