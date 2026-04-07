@@ -1,6 +1,6 @@
 # ReYaeger
 
-This is an alternative frontend for the Yaeger roaster firmware. It can be hosted with the yaeger firmware on an ESP32 S3.
+This is an alternative frontend for the [Yaeger](https://github.com/tadelv/yaeger) roaster firmware. It can be hosted with the yaeger firmware on an ESP32 S3.
 
 ![screenshot2.png](docs/assets/screenshot2.png)
 
@@ -19,7 +19,7 @@ This is an alternative frontend for the Yaeger roaster firmware. It can be hoste
 
 # Install
 
-You can build and flash everything using the familiar `build_and_flash.sh` script of yaeger (choose `r` for reyaeger when prompted).
+You can build and flash everything using the familiar `build_and_flash.sh` script of [Yaeger](https://github.com/tadelv/yaeger) (choose `r` for reyaeger when prompted).
 
 ## Manual install
 
