@@ -261,7 +261,15 @@ export class PidAutoTune2 {
         this._error = this._setpoint - this._input; // Normal error calculation
       }
 
+      // TODO: Figure out the upstream problem: https://github.com/lily-osp/AutoTunePID/issues/4
+      //console.log(`Integral: ${this._integral}`);
+      //console.log(`Error: ${this._error}`);
+      // Reset integral term if error is zero (faster and smoother zeroing)
+      // if (Math.abs(this._error) < 0.001) {
+      //   this._integral = 0;
+      // } else {
       this._integral += this._error * dt; // Proper numerical integration using actual time step
+      // }
 
       this._derivative = (this._error - this._previousError) / dt; // Proper derivative calculation
       this.computePID();
@@ -433,7 +441,6 @@ export class PidAutoTune2 {
   private computePID(): void {
     // Calculate error
     this._error = this._setpoint - this._input;
-
     // If error is very small, treat it as zero
     if (Math.abs(this._error) < 0.001) {
       this._error = 0;
