@@ -20,7 +20,7 @@ createRoot(document.getElementById('root')!).render(
         <PidControlProvider>
           <RecorderProvider>
             <ProfileExecutionProvider>
-              <BrowserRouter>
+              <BrowserRouter basename={import.meta.env.BASE_URL}>
                 <Routes>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/editor" element={<EditorPage />} />
