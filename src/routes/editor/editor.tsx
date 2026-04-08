@@ -8,7 +8,7 @@ import React, {
   useState,
 } from 'react';
 import { useAppDispatch, useAppSelector } from '../../state/store.ts';
-import { Duration } from 'luxon';
+import { DateTime, Duration } from 'luxon';
 import { Actions } from '../../state/actions';
 import { calculateRoR, getPathForPoints } from '../../common/splineUtils.ts';
 import { get, last } from 'lodash-es';
@@ -25,6 +25,7 @@ import {
 import Dropzone from 'react-dropzone';
 import { convertLegacyToNxProfile } from '../../common/profileUtils.ts';
 import {
+  useRecorderEvents,
   useRecorderRecords,
   useRecorderStartDate,
 } from '../../hooks/useRecorder.ts';
@@ -85,6 +86,7 @@ export const BezierCurveEditor: React.FC<Props> = ({
     { type: 'heater' | 'fan'; index: number } | undefined
   >(undefined);
   const records = useRecorderRecords();
+  const events = useRecorderEvents();
   const start = useRecorderStartDate();
   const currentTime = 0;
   const currentTemperature = 0;
@@ -463,6 +465,33 @@ export const BezierCurveEditor: React.FC<Props> = ({
     ctx.lineWidth = 3;
     ctx.stroke(fanCurvePath);
 
+    events.forEach((event) => {
+      if (!start) return;
+      ctx.strokeStyle = 'rgb(255 21 21 / 0.7)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(timeToX(event.time.diff(start).as('seconds')), speedToY(100));
+      ctx.lineTo(timeToX(event.time.diff(start).as('seconds')), speedToY(0));
+      ctx.stroke();
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgb(255 21 21)';
+      ctx.fillText(
+        event.label,
+        timeToX(event.time.diff(start!).as('seconds')) + 4,
+        speedToY(0),
+      );
+    });
+
+    if (start) {
+      const seconds = DateTime.now().diff(start).as('seconds');
+      ctx.strokeStyle = 'rgb(255 255 255 / 0.7)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(timeToX(seconds), speedToY(100));
+      ctx.lineTo(timeToX(seconds), speedToY(0));
+      ctx.stroke();
+    }
+
     heaterPhases.forEach((point, index) => {
       const p = {
         x: timeToX(point.time),
@@ -562,6 +591,8 @@ export const BezierCurveEditor: React.FC<Props> = ({
     referenceHeaterCurvePath,
     referenceFanCurvePath,
     dataPaths,
+    events,
+    start,
   ]);
 
   const handleMouseDown = useCallback(
