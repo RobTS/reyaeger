@@ -7,11 +7,24 @@ import type {
 
 export type WsStatus = 'disconnected' | 'error' | 'pending' | 'connected';
 
+export type HeatingMode = 'Manual' | 'PID';
+
+export type TemperatureTarget = 'ET' | 'BT' | 'MAX';
+
+export type YaegerCommand = {
+  Mode?: HeatingMode;
+  Target?: TemperatureTarget;
+  BurnerVal?: number;
+  Setpoint?: number;
+  FanVal?: number;
+};
+
 export type ConnectionContextType = {
   status: WsStatus;
   clientId: number | undefined;
   lastMessage: YaegerMessageWrapper | undefined;
-  sendCommand: (command: { BurnerVal?: number; FanVal?: number }) => void;
+  sendCommand: (command: YaegerCommand) => void;
+  startAutotune: () => void;
   error: Error | undefined;
   preferences: YaegerPreferencesMessage | undefined;
   setPreferences: (preferences: Partial<YaegerPreferences>) => void;
@@ -27,6 +40,9 @@ export const YaegerConnectionContext = createContext<ConnectionContextType>({
   error: undefined,
   preferences: undefined,
   setPreferences: () => {
+    throw new Error('ConnectionContextProvider not found');
+  },
+  startAutotune: () => {
     throw new Error('ConnectionContextProvider not found');
   },
 });

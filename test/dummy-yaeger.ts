@@ -1,5 +1,12 @@
 import WebSocket, { WebSocketServer } from 'ws';
 import { DateTime } from 'luxon';
+import type {
+  HeaterMode,
+  TemperatureTarget,
+  YaegerStatusMessage,
+} from '../src/types/connection.ts';
+import { isNumber } from 'lodash-es';
+import { PidAutoTune2 } from './pidControl.ts';
 
 const wss = new WebSocketServer({
   port: 8080,
@@ -44,80 +51,132 @@ let bt = 20;
 let et = 20;
 const amb = 20;
 
-let lastSetting: {
-  command: { BurnerVal: number; FanVal: number };
-  time: DateTime;
-} = { command: { BurnerVal: 0, FanVal: 0 }, time: DateTime.now() };
+type IncomingMessage = {
+  command: 'setPreferences' | 'getPreferences' | 'status';
+  BurnerVal?: number;
+  FanVal?: number;
+  Setpoint?: number;
+  Mode?: HeaterMode;
+  Target?: TemperatureTarget;
+  pidKp?: number;
+  pidKi?: number;
+  pidKd?: number;
+};
 
-const computeCalories = () => {
-  const measuringTime = DateTime.now();
-  const setting = lastSetting;
-  lastSetting = { command: setting.command, time: measuringTime };
-  const time = measuringTime.diff(setting.time).as('milliseconds');
-  //console.log('Time elapsed: ' + time);
-  const burnerTemp = getBurnerTemp(setting.command.BurnerVal);
-  const efficiency = getHeaterEfficiency(setting.command.FanVal);
+type ReferenceMessage = { time: DateTime; message: YaegerStatusMessage };
+
+let previousMessage: ReferenceMessage | undefined;
+
+const computeCalories = (
+  previousMessage: ReferenceMessage | undefined,
+  currentMessage: ReferenceMessage,
+) => {
+  if (!previousMessage) return;
+  const measuringTime = currentMessage.time;
+  const time = Math.abs(
+    measuringTime.diff(previousMessage.time).as('milliseconds'),
+  );
+  const burnerTemp = getBurnerTemp(previousMessage.message.BurnerVal);
+  const efficiency = getHeaterEfficiency(previousMessage.message.FanVal);
   exhaustCaloriesApplied +=
     (time / 10000) * efficiency * (burnerTemp - et) * heaterWatts;
   beanCaloriesApplied +=
     (time / 10000) * efficiency * (burnerTemp - bt) * heaterWatts;
-  //console.log('Calories  applied: ' + caloriesApplied);
-  //console.log('TempDelta  : ' + tempDelta);
   bt = beanCaloriesApplied / beanMass;
   et = exhaustCaloriesApplied / exhaustMass;
-  //et = Math.abs(amb);
 };
 
-setInterval(() => {
-  computeCalories();
-}, 100);
+let target: TemperatureTarget = 'ET';
+let fanVal: number = 0;
+let burnerVal: number = 0;
 
-const pidValues = {
-  pidKp: 0.8,
-  pidKi: 0.16,
-  pidKd: 1.2,
-};
+const autotuner = new PidAutoTune2(0, 90);
+autotuner.setManualGains(1, 0.5, 3);
+autotuner.setOperationalMode('Tune');
+
 wss.on('connection', (ws: WebSocket) => {
   ws.on('error', console.error);
 
   ws.on('message', function message(buffer: Buffer) {
     try {
-      const payload = JSON.parse(buffer.toString());
-      if (payload.BurnerVal !== undefined || payload.FanVal !== undefined) {
-        computeCalories();
+      const payload = JSON.parse(buffer.toString()) as IncomingMessage;
 
-        lastSetting = {
-          time: DateTime.now(),
-          command: { ...(lastSetting ? lastSetting.command : {}), ...payload },
-        };
+      if (payload.Setpoint !== undefined) {
+        autotuner.setSetpoint(payload.Setpoint);
       }
+      if (payload.FanVal !== undefined) {
+        fanVal = payload.FanVal;
+      }
+      if (payload.BurnerVal !== undefined) {
+        burnerVal = payload.BurnerVal;
+      }
+      if (autotuner.getOperationalMode() !== 'Tune') {
+        if (payload.Mode === 'PID') {
+          autotuner.setOperationalMode('Auto');
+        }
+        if (payload.Mode === 'Manual') {
+          autotuner.setOperationalMode('Manual');
+        }
+      }
+
+      if (payload.Target !== undefined) {
+        target = payload.Target;
+      }
+
       if (['setPreferences', 'getPreferences'].includes(payload.command)) {
         if (payload.command === 'setPreferences') {
-          pidValues.pidKp = payload.pidKp;
-          pidValues.pidKi = payload.pidKi;
-          pidValues.pidKd = payload.pidKd;
+          if (
+            isNumber(payload.pidKp) &&
+            isNumber(payload.pidKi) &&
+            isNumber(payload.pidKd)
+          )
+            autotuner.setManualGains(
+              payload.pidKp,
+              payload.pidKi,
+              payload.pidKd,
+            );
         }
         ws.send(
           JSON.stringify({
             data: {
               type: 'preferences',
-              ...pidValues,
+              pidKd: autotuner.getKd(),
+              pidKi: autotuner.getKi(),
+              pidKp: autotuner.getKp(),
             },
           }),
         );
         return;
       }
+
+      const autoTunerInput =
+        target === 'ET' ? et : target === 'BT' ? bt : Math.max(et, bt);
+      autotuner.update(autoTunerInput);
+      burnerVal = autotuner.getOutput();
+      const result: YaegerStatusMessage = {
+        id: DateTime.now().toSeconds(),
+        type: 'status',
+        ET: et,
+        BT: bt,
+        Amb: amb,
+        FanVal: fanVal,
+        BurnerVal: burnerVal,
+        pidKd: autotuner.getKd(),
+        pidKi: autotuner.getKi(),
+        pidKp: autotuner.getKp(),
+        Setpoint: autotuner.getSetpoint(),
+        Mode: autotuner.getOperationalMode() === 'Auto' ? 'PID' : 'Manual',
+        Target: target,
+      };
+      const newMessage: ReferenceMessage = {
+        message: result,
+        time: DateTime.now(),
+      };
+      computeCalories(previousMessage, newMessage);
+      previousMessage = newMessage;
       ws.send(
         JSON.stringify({
-          data: {
-            type: 'status',
-            ET: et,
-            BT: bt,
-            Amb: amb,
-            FanVal: lastSetting?.command.FanVal || 0,
-            BurnerVal: lastSetting?.command.BurnerVal || 0,
-            id: DateTime.now().toSeconds(),
-          },
+          data: result,
         }),
       );
     } catch (e) {

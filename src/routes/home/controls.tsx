@@ -3,11 +3,6 @@ import {
   useYaegerCommands,
   useYaegerLastMessage,
 } from '../../hooks/useYaeger.ts';
-import {
-  usePidControlReferenceValue,
-  usePidControlSetpoint,
-  usePidControlStatus,
-} from '../../hooks/usePidControl.ts';
 import { Button } from '../../components/button/button.tsx';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useProfileExecutionEnabled } from '../../hooks/useProfileExecution.ts';
@@ -15,26 +10,25 @@ import { useProfileExecutionEnabled } from '../../hooks/useProfileExecution.ts';
 export const RoastingControls: React.FC = () => {
   const lastMessage = useYaegerLastMessage();
   const { sendCommand } = useYaegerCommands();
-  const [setpoint, setSetpoint] = usePidControlSetpoint();
-  const [pidEnabled, setPidEnabled] = usePidControlStatus();
-  const [pidReference, setPidReference] = usePidControlReferenceValue();
   const profileExecutionEnabled = useProfileExecutionEnabled();
 
   useHotkeys('d', () => {
-    if (pidEnabled) {
-      setSetpoint(Math.min(setpoint + 1, 250));
+    if (!lastMessage) return;
+    if (lastMessage.message.Mode === 'PID') {
+      sendCommand({
+        Setpoint: Math.min(lastMessage?.message.Setpoint + 1, 100),
+      });
     } else {
-      if (!lastMessage) return;
       sendCommand({
         BurnerVal: Math.min(lastMessage.message.BurnerVal + 1, 100),
       });
     }
   });
   useHotkeys('a', () => {
-    if (pidEnabled) {
-      setSetpoint(Math.max(setpoint - 1, 0));
+    if (!lastMessage) return;
+    if (lastMessage.message.Mode === 'PID') {
+      sendCommand({ Setpoint: Math.max(lastMessage?.message.Setpoint - 1, 0) });
     } else {
-      if (!lastMessage) return;
       sendCommand({
         BurnerVal: Math.max(lastMessage.message.BurnerVal - 1, 0),
       });
@@ -79,9 +73,9 @@ export const RoastingControls: React.FC = () => {
           'flex flex-col gap-4 items-center w-full border border-gray-300 rounded-2xl p-4'
         }
       >
-        {pidEnabled ? (
+        {lastMessage?.message.Mode === 'PID' ? (
           <div>
-            Heater Control - {setpoint.toFixed(1)} °C (
+            Heater Control - {lastMessage.message.Setpoint.toFixed(1)} °C (
             {lastMessage?.message.BurnerVal.toFixed(1)} %)
           </div>
         ) : (
@@ -95,8 +89,13 @@ export const RoastingControls: React.FC = () => {
               <input
                 type="checkbox"
                 disabled={profileExecutionEnabled}
-                checked={pidEnabled}
-                onChange={() => setPidEnabled(!pidEnabled)}
+                checked={lastMessage?.message.Mode === 'PID'}
+                onChange={() =>
+                  sendCommand({
+                    Mode:
+                      lastMessage?.message.Mode === 'PID' ? 'Manual' : 'PID',
+                  })
+                }
                 className="peer h-5 w-5 cursor-pointer transition-all rounded shadow hover:shadow-md border border-slate-300 checked:bg-blue-600 checked:border-blue-600"
                 id="check1"
               />
@@ -105,22 +104,28 @@ export const RoastingControls: React.FC = () => {
           </div>
           <div className={'flex flex-row'}>
             <Button
-              onClick={() => setPidReference('BT')}
-              type={pidReference === 'BT' ? 'primary' : 'default'}
+              onClick={() => sendCommand({ Target: 'BT' })}
+              type={
+                lastMessage?.message.Target === 'BT' ? 'primary' : 'default'
+              }
               className={'rounded-r-none'}
             >
               BT
             </Button>
             <Button
-              onClick={() => setPidReference('ET')}
-              type={pidReference === 'ET' ? 'primary' : 'default'}
+              onClick={() => sendCommand({ Target: 'ET' })}
+              type={
+                lastMessage?.message.Target === 'ET' ? 'primary' : 'default'
+              }
               className={'rounded-none'}
             >
               ET
             </Button>
             <Button
-              onClick={() => setPidReference('MAX')}
-              type={pidReference === 'MAX' ? 'primary' : 'default'}
+              onClick={() => sendCommand({ Target: 'MAX' })}
+              type={
+                lastMessage?.message.Target === 'MAX' ? 'primary' : 'default'
+              }
               className={'rounded-l-none'}
             >
               MAX
@@ -128,7 +133,7 @@ export const RoastingControls: React.FC = () => {
           </div>
         </div>
 
-        {pidEnabled ? (
+        {lastMessage?.message.Mode === 'PID' ? (
           <input
             disabled={profileExecutionEnabled}
             type="range"
@@ -136,9 +141,9 @@ export const RoastingControls: React.FC = () => {
             aria-label="range"
             min={0}
             max={250}
-            value={setpoint}
+            value={lastMessage.message.Setpoint}
             onChange={(e) => {
-              setSetpoint(e.target.valueAsNumber);
+              sendCommand({ Setpoint: e.target.valueAsNumber });
             }}
           />
         ) : (

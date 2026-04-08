@@ -33,6 +33,7 @@ export const useYaegerCommands = () => {
   return {
     sendCommand: context.sendCommand,
     setPreferences: context.setPreferences,
+    startAutotune: context.startAutotune,
   };
 };
 

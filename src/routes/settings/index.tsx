@@ -3,22 +3,17 @@ import { useEffect, useState } from 'react';
 import { Layout } from '../../components/navigation/layout.tsx';
 import cx from 'classnames';
 import {
-  usePidControlTuneStatus,
-  usePidControlTuningResult,
-} from '../../hooks/usePidControl.ts';
-import {
   useYaegerCommands,
+  useYaegerLastMessage,
   useYaegerPreferences,
 } from '../../hooks/useYaeger.ts';
 import { Button } from '../../components/button/button.tsx';
 import { isNumber } from 'lodash-es';
-import { Environment } from '../../common/env.ts';
 
 export const SettingsPage: React.FC = () => {
-  const [tuning, setTuning] = usePidControlTuneStatus();
-  const tuningResult = usePidControlTuningResult();
   const preferences = useYaegerPreferences();
-  const { setPreferences } = useYaegerCommands();
+  const { setPreferences, startAutotune } = useYaegerCommands();
+  const lastMessage = useYaegerLastMessage()?.message;
   const [pidKp, setPidKp] = useState(preferences?.pidKp ?? 0);
   const [pidKi, setPidKi] = useState(preferences?.pidKp ?? 0);
   const [pidKd, setPidKd] = useState(preferences?.pidKp ?? 0);
@@ -28,21 +23,17 @@ export const SettingsPage: React.FC = () => {
 
   useEffect(() => {
     if (!preferences) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPidKp(preferences.pidKp);
-    setPidKi(preferences.pidKi);
-    setPidKd(preferences.pidKd);
     if (isNumber(preferences.cooldownFanSpeed))
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCooldownFanSpeed(preferences.cooldownFanSpeed);
   }, [preferences]);
 
   useEffect(() => {
-    if (!tuningResult) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPidKp(tuningResult.kp);
-    setPidKi(tuningResult.ki);
-    setPidKd(tuningResult.kd);
-  }, [tuningResult]);
+    setPidKp(lastMessage?.pidKp || 0);
+    setPidKi(lastMessage?.pidKi || 0);
+    setPidKd(lastMessage?.pidKd || 0);
+  }, [lastMessage?.pidKp, lastMessage?.pidKi, lastMessage?.pidKd]);
 
   const changed =
     preferences?.pidKp !== pidKp ||
@@ -149,19 +140,15 @@ export const SettingsPage: React.FC = () => {
             Save
           </Button>
           {}
-          {Environment.isDevelopment() ? (
-            <Button
-              className={cx(tuning ? 'bg-red-500!' : 'bg-green-200!')}
-              onClick={() => {
-                setTuning(!tuning);
-              }}
-            >
-              {tuning ? 'Tuning...' : 'Tune PID'}
-            </Button>
-          ) : null}
-          {tuningResult ? (
-            <div className={'text-center'}>Click save to persist</div>
-          ) : null}
+
+          <Button
+            className={cx('bg-green-200!')}
+            onClick={() => {
+              startAutotune();
+            }}
+          >
+            {'Tune PID'}
+          </Button>
         </div>
       </div>
     </Layout>
