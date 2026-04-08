@@ -10,7 +10,7 @@ import React, {
 import { useAppDispatch, useAppSelector } from '../../state/store.ts';
 import { Duration } from 'luxon';
 import { Actions } from '../../state/actions';
-import { getPathForPoints } from '../../common/splineUtils.ts';
+import { calculateRoR, getPathForPoints } from '../../common/splineUtils.ts';
 import { get, last } from 'lodash-es';
 import { Button } from '../../components/button/button.tsx';
 import {
@@ -24,11 +24,15 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import Dropzone from 'react-dropzone';
 import { convertLegacyToNxProfile } from '../../common/profileUtils.ts';
+import {
+  useRecorderRecords,
+  useRecorderStartDate,
+} from '../../hooks/useRecorder.ts';
 
 const MAX_TEMP = 250;
 
 const DownloadButton: React.FC<{ className?: string }> = ({ className }) => {
-  const profileDraft = useAppSelector((s) => s.editor.profileDraft);
+  const profileDraft = useAppSelector((s) => s.editor.editorDraft);
 
   const onDownload = useCallback(() => {
     if (!profileDraft.heaterPhases.length) return;
@@ -61,7 +65,12 @@ const DownloadButton: React.FC<{ className?: string }> = ({ className }) => {
   );
 };
 
-export const BezierCurveEditor: React.FC = () => {
+type Props = { showRecording?: boolean; draftType: 'editor' | 'roast' };
+
+export const BezierCurveEditor: React.FC<Props> = ({
+  showRecording,
+  draftType,
+}) => {
   const dispatch = useAppDispatch();
   const {
     heaterPhases,
@@ -69,17 +78,21 @@ export const BezierCurveEditor: React.FC = () => {
     referenceFanPhases,
     referenceHeaterPhases,
     name,
-  } = useAppSelector((s) => s.editor.profileDraft);
+  } = useAppSelector((s) =>
+    draftType === 'editor' ? s.editor.editorDraft : s.editor.roastDraft,
+  );
   const [activePhase, setActivePhase] = useState<
     { type: 'heater' | 'fan'; index: number } | undefined
   >(undefined);
+  const records = useRecorderRecords();
+  const start = useRecorderStartDate();
   const currentTime = 0;
   const currentTemperature = 0;
 
   const totalTimeSeconds = Math.max(
     last(heaterPhases)?.time || 0,
     last(fanPhases)?.time || 0,
-    60,
+    10 * 60,
   );
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -94,7 +107,7 @@ export const BezierCurveEditor: React.FC = () => {
   const [dimensions, setDimensions] = useState({ width: 600, height: 400 });
 
   const padding = useMemo(
-    () => ({ top: 40, right: 40, bottom: 50, left: 60 }),
+    () => ({ top: 40, right: 60, bottom: 50, left: 60 }),
     [],
   );
   const chartWidth = dimensions.width - padding.left - padding.right;
@@ -148,6 +161,112 @@ export const BezierCurveEditor: React.FC = () => {
       ),
     [dimensions, fanPhases, padding, totalTimeSeconds],
   );
+
+  const dataPaths = useMemo(():
+    | {
+        etPath?: Path2D;
+        btPath?: Path2D;
+        fanPath?: Path2D;
+        heaterPath?: Path2D;
+        btRorPath?: Path2D;
+        etRorPath?: Path2D;
+      }
+    | undefined => {
+    if (!showRecording) return;
+    if (!start) return;
+    const etValues: [number, number][] = [];
+    const btValues: [number, number][] = [];
+    const fanValues: [number, number][] = [];
+    const heaterValues: [number, number][] = [];
+
+    records.forEach((record) => {
+      const time = record.time.diff(start).as('seconds');
+      etValues.push([time, record.message.ET]);
+      btValues.push([time, record.message.BT]);
+      fanValues.push([time, record.message.FanVal]);
+      heaterValues.push([time, record.message.BurnerVal]);
+    });
+
+    const etPath = new Path2D(
+      getPathForPoints(etValues, {
+        scaleX: {
+          domain: [0, totalTimeSeconds],
+          range: [padding.left, dimensions.width - padding.right],
+        },
+        scaleY: {
+          domain: [0, 250],
+          range: [dimensions.height - padding.bottom, padding.top],
+        },
+        curve: 'catmullRom',
+      }),
+    );
+    const btPath = new Path2D(
+      getPathForPoints(btValues, {
+        scaleX: {
+          domain: [0, totalTimeSeconds],
+          range: [padding.left, dimensions.width - padding.right],
+        },
+        scaleY: {
+          domain: [0, 250],
+          range: [dimensions.height - padding.bottom, padding.top],
+        },
+        curve: 'catmullRom',
+      }),
+    );
+    const etRorPath = new Path2D(
+      getPathForPoints(calculateRoR(etValues), {
+        scaleX: {
+          domain: [0, totalTimeSeconds],
+          range: [padding.left, dimensions.width - padding.right],
+        },
+        scaleY: {
+          domain: [0, 5],
+          range: [dimensions.height - padding.bottom, padding.top],
+        },
+        curve: 'basis',
+      }),
+    );
+    const btRorPath = new Path2D(
+      getPathForPoints(calculateRoR(btValues), {
+        scaleX: {
+          domain: [0, totalTimeSeconds],
+          range: [padding.left, dimensions.width - padding.right],
+        },
+        scaleY: {
+          domain: [0, 5],
+          range: [dimensions.height - padding.bottom, padding.top],
+        },
+        curve: 'basis',
+      }),
+    );
+    const fanPath = new Path2D(
+      getPathForPoints(fanValues, {
+        scaleX: {
+          domain: [0, totalTimeSeconds],
+          range: [padding.left, dimensions.width - padding.right],
+        },
+        scaleY: {
+          domain: [0, 100],
+          range: [dimensions.height - padding.bottom, padding.top],
+        },
+        curve: 'catmullRom',
+      }),
+    );
+    const heaterPath = new Path2D(
+      getPathForPoints(heaterValues, {
+        scaleX: {
+          domain: [0, totalTimeSeconds],
+          range: [padding.left, dimensions.width - padding.right],
+        },
+        scaleY: {
+          domain: [0, 100],
+          range: [dimensions.height - padding.bottom, padding.top],
+        },
+        curve: 'basis',
+      }),
+    );
+    return { etPath, btPath, fanPath, heaterPath, btRorPath, etRorPath };
+  }, [dimensions, padding, records, showRecording, start, totalTimeSeconds]);
 
   const referenceHeaterCurvePath = useMemo(
     () =>
@@ -290,6 +409,18 @@ export const BezierCurveEditor: React.FC = () => {
     }
 
     // Draw Paths
+    if (dataPaths?.etRorPath) {
+      ctx.strokeStyle = 'rgb(35 255 52 / 0.4)';
+      ctx.lineWidth = 3;
+      ctx.stroke(dataPaths.etRorPath);
+    }
+
+    if (dataPaths?.btRorPath) {
+      ctx.strokeStyle = 'rgb(166 31 255 / 0.6)';
+      ctx.lineWidth = 3;
+      ctx.stroke(dataPaths.btRorPath);
+    }
+
     if (referenceHeaterCurvePath) {
       ctx.strokeStyle = 'rgba(255,255,0, 0.2)';
       ctx.lineWidth = 3;
@@ -304,6 +435,28 @@ export const BezierCurveEditor: React.FC = () => {
       ctx.strokeStyle = 'rgb(4 249 255 / 0.2)';
       ctx.lineWidth = 3;
       ctx.stroke(referenceFanCurvePath);
+    }
+
+    if (dataPaths?.etPath) {
+      ctx.strokeStyle = 'rgb(255 4 92 / 0.84)';
+      ctx.lineWidth = 3;
+      ctx.stroke(dataPaths.etPath);
+    }
+    if (dataPaths?.btPath) {
+      ctx.strokeStyle = 'rgb(86 159 255 / 0.84)';
+      ctx.lineWidth = 3;
+      ctx.stroke(dataPaths.btPath);
+    }
+    if (dataPaths?.fanPath) {
+      ctx.strokeStyle = 'rgb(207 213 255 / 0.84)';
+      ctx.lineWidth = 3;
+      ctx.stroke(dataPaths.fanPath);
+    }
+
+    if (dataPaths?.heaterPath) {
+      ctx.strokeStyle = 'rgb(255 218 80 / 0.84)';
+      ctx.lineWidth = 3;
+      ctx.stroke(dataPaths.heaterPath);
     }
 
     ctx.strokeStyle = 'rgb(4 249 255 / 0.5)';
@@ -408,6 +561,7 @@ export const BezierCurveEditor: React.FC = () => {
     activePhase,
     referenceHeaterCurvePath,
     referenceFanCurvePath,
+    dataPaths,
   ]);
 
   const handleMouseDown = useCallback(
@@ -488,6 +642,7 @@ export const BezierCurveEditor: React.FC = () => {
         );
         dispatch(
           Actions.changeHeaterPhase({
+            target: draftType,
             index: draggingPoint.index,
             temperature: newTemperature,
             time: newTime,
@@ -502,6 +657,7 @@ export const BezierCurveEditor: React.FC = () => {
         );
         dispatch(
           Actions.changeFanPhase({
+            target: draftType,
             index: draggingPoint.index,
             fanSpeed: newSpeed,
             time: newTime,
@@ -517,6 +673,7 @@ export const BezierCurveEditor: React.FC = () => {
       chartWidth,
       chartHeight,
       dispatch,
+      draftType,
     ],
   );
 
@@ -526,136 +683,154 @@ export const BezierCurveEditor: React.FC = () => {
 
   return (
     <div ref={containerRef} className="flex flex-col w-full gap-4">
-      <div className="flex flex-row justify-between flex-wrap gap-4">
-        <input
-          type={'text'}
-          onChange={(e) =>
-            dispatch(Actions.setProfileName({ name: e.target.value }))
-          }
-          value={name}
-          className={
-            'max-md:w-full lg:w-50 bg-transparent placeholder:text-slate-400 text-slate-700 text-sm border border-gray-300 rounded-md px-3 py-2 transition duration-300 ease focus:outline-none focus:border-slate-400 hover:border-slate-300 shadow-sm focus:shadow'
-          }
-        />
-        <div className={'flex flex-row gap-2 gap-y-4 flex-wrap'}>
-          <Button
-            iconLeft={faTrash}
-            onClick={() => dispatch(Actions.resetProfileDraft())}
-          >
-            Reset
-          </Button>
-          <div className={'flex flex-row'}>
+      {draftType === 'editor' ? (
+        <div className="flex flex-row justify-between flex-wrap gap-4">
+          <input
+            type={'text'}
+            onChange={(e) =>
+              dispatch(
+                Actions.setProfileName({
+                  target: draftType,
+                  name: e.target.value,
+                }),
+              )
+            }
+            value={name}
+            className={
+              'max-md:w-full lg:w-50 bg-transparent placeholder:text-slate-400 text-slate-700 text-sm border border-gray-300 rounded-md px-3 py-2 transition duration-300 ease focus:outline-none focus:border-slate-400 hover:border-slate-300 shadow-sm focus:shadow'
+            }
+          />
+          <div className={'flex flex-row gap-2 gap-y-4 flex-wrap'}>
             <Button
-              iconLeft={faFire}
-              iconRight={faPlus}
-              className={'rounded-r-none border-r-0'}
+              iconLeft={faTrash}
               onClick={() =>
                 dispatch(
-                  Actions.addHeaterPhase({
-                    index:
-                      activePhase?.type === 'heater'
-                        ? activePhase.index
-                        : undefined,
+                  Actions.resetProfileDraft({
+                    target: draftType,
                   }),
                 )
               }
             >
-              Heater
+              Reset
             </Button>
-            <Button
-              iconRight={faMinus}
-              className={'rounded-l-none'}
-              onClick={() =>
-                dispatch(
-                  Actions.removeHeaterPhase({
-                    index:
-                      activePhase?.type === 'heater'
-                        ? activePhase.index
-                        : heaterPhases.length - 1,
-                  }),
-                )
-              }
-            />
-          </div>
-          <div className={'flex flex-row'}>
-            <Button
-              iconLeft={faFan}
-              iconRight={faPlus}
-              className={'rounded-r-none border-r-0'}
-              onClick={() =>
-                dispatch(
-                  Actions.addFanPhase({
-                    index:
-                      activePhase?.type === 'fan'
-                        ? activePhase.index
-                        : undefined,
-                  }),
-                )
-              }
-            >
-              Fan
-            </Button>
-            <Button
-              iconRight={faMinus}
-              className={'rounded-l-none'}
-              onClick={() =>
-                dispatch(
-                  Actions.removeFanPhase({
-                    index:
-                      activePhase?.type === 'fan'
-                        ? activePhase.index
-                        : heaterPhases.length - 1,
-                  }),
-                )
-              }
-            />
-          </div>
-          <Dropzone
-            onDrop={(acceptedFiles) => {
-              const file = acceptedFiles[0];
-              if (!file) {
-                return;
-              }
-              const reader = new FileReader();
-
-              reader.onload = (e) => {
-                try {
-                  // eslint-disable-next-line
-                  const jsonData = JSON.parse(e.target?.result as string) ;
-                  if (
-                    get(jsonData, 'heaterPhases') &&
-                    get(jsonData, 'fanPhases')
-                  ) {
-                    dispatch(Actions.prefillProfileDraft(jsonData));
-                  }
-                  if (get(jsonData, 'steps')) {
-                    dispatch(
-                      Actions.prefillProfileDraft(
-                        convertLegacyToNxProfile(jsonData, {
-                          name: (file.name || '').split('.')[0],
-                        }),
-                      ),
-                    );
-                  }
-                } catch (error) {
-                  console.log('upload failed:', error);
+            <div className={'flex flex-row'}>
+              <Button
+                iconLeft={faFire}
+                iconRight={faPlus}
+                className={'rounded-r-none border-r-0'}
+                onClick={() =>
+                  dispatch(
+                    Actions.addHeaterPhase({
+                      target: draftType,
+                      index:
+                        activePhase?.type === 'heater'
+                          ? activePhase.index
+                          : undefined,
+                    }),
+                  )
                 }
-              };
-              reader.readAsText(file);
-            }}
-          >
-            {({ getRootProps, getInputProps }) => (
-              <div {...getRootProps()}>
-                <input {...getInputProps()} />
-                <Button iconLeft={faUpload} className={'text-center'}>
-                  Upload
-                </Button>
-              </div>
-            )}
-          </Dropzone>
-          <DownloadButton />
+              >
+                Heater
+              </Button>
+              <Button
+                iconRight={faMinus}
+                className={'rounded-l-none'}
+                onClick={() =>
+                  dispatch(
+                    Actions.removeHeaterPhase({
+                      target: draftType,
+                      index:
+                        activePhase?.type === 'heater'
+                          ? activePhase.index
+                          : heaterPhases.length - 1,
+                    }),
+                  )
+                }
+              />
+            </div>
+            <div className={'flex flex-row'}>
+              <Button
+                iconLeft={faFan}
+                iconRight={faPlus}
+                className={'rounded-r-none border-r-0'}
+                onClick={() =>
+                  dispatch(
+                    Actions.addFanPhase({
+                      target: draftType,
+                      index:
+                        activePhase?.type === 'fan'
+                          ? activePhase.index
+                          : undefined,
+                    }),
+                  )
+                }
+              >
+                Fan
+              </Button>
+              <Button
+                iconRight={faMinus}
+                className={'rounded-l-none'}
+                onClick={() =>
+                  dispatch(
+                    Actions.removeFanPhase({
+                      target: draftType,
+                      index:
+                        activePhase?.type === 'fan'
+                          ? activePhase.index
+                          : heaterPhases.length - 1,
+                    }),
+                  )
+                }
+              />
+            </div>
+            <Dropzone
+              onDrop={(acceptedFiles) => {
+                const file = acceptedFiles[0];
+                if (!file) {
+                  return;
+                }
+                const reader = new FileReader();
+
+                reader.onload = (e) => {
+                  try {
+                    // eslint-disable-next-line
+                  const jsonData = JSON.parse(e.target?.result as string) ;
+                    if (
+                      get(jsonData, 'heaterPhases') &&
+                      get(jsonData, 'fanPhases')
+                    ) {
+                      dispatch(Actions.prefillProfileDraft(jsonData));
+                    }
+                    if (get(jsonData, 'steps')) {
+                      dispatch(
+                        Actions.prefillProfileDraft({
+                          target: draftType,
+                          profile: convertLegacyToNxProfile(jsonData, {
+                            name: (file.name || '').split('.')[0],
+                          }),
+                        }),
+                      );
+                    }
+                  } catch (error) {
+                    console.log('upload failed:', error);
+                  }
+                };
+                reader.readAsText(file);
+              }}
+            >
+              {({ getRootProps, getInputProps }) => (
+                <div {...getRootProps()}>
+                  <input {...getInputProps()} />
+                  <Button iconLeft={faUpload} className={'text-center'}>
+                    Upload
+                  </Button>
+                </div>
+              )}
+            </Dropzone>
+            <DownloadButton />
+          </div>
         </div>
-      </div>
+      ) : null}
       <canvas
         ref={canvasRef}
         className="w-full min-h-75 rounded-lg cursor-crosshair"

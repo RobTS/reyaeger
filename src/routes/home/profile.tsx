@@ -26,10 +26,37 @@ import { Actions } from '../../state/actions';
 import { useMemo } from 'react';
 import { convertLegacyToNxProfile } from '../../common/profileUtils.ts';
 
-const DownloadButton: React.FC<{ className?: string }> = ({ className }) => {
+const DownloadProfileButton: React.FC<{ className?: string }> = ({
+  className,
+}) => {
+  const profile = useAppSelector((s) => s.editor.roastDraft);
+  return (
+    <Button
+      iconLeft={faDownload}
+      className={className}
+      onClick={() => {
+        const blob = new Blob([JSON.stringify(profile, null, 2)], {
+          type: 'application/json',
+        });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `profile_${profile?.name || 'no_profile'}.json`;
+        a.click();
+
+        URL.revokeObjectURL(url);
+      }}
+    >
+      Profile
+    </Button>
+  );
+};
+
+const DownloadLogButton: React.FC<{ className?: string }> = ({ className }) => {
   const records = useRecorderRecords();
   const events = useRecorderEvents();
-  const profile = useAppSelector((s) => s.profile.selectedProfile.profile);
+  const profile = useAppSelector((s) => s.editor.roastDraft);
   return (
     <Button
       iconLeft={faDownload}
@@ -67,7 +94,8 @@ const DownloadButton: React.FC<{ className?: string }> = ({ className }) => {
 };
 
 export const ProfileControls: React.FC = () => {
-  const profile = useAppSelector((s) => s.profile.selectedProfile.profile);
+  const profile = useAppSelector((s) => s.editor.roastDraft);
+  const profileSet = !!profile.heaterPhases.length;
   const profiles = useAppSelector((s) => s.profile.storedProfiles);
   const hasProfiles = useMemo(() => !!Object.keys(profiles).length, [profiles]);
 
@@ -77,7 +105,7 @@ export const ProfileControls: React.FC = () => {
     useProfileExecutionCommands();
   const { start: startRecorder, addEvent } = useRecorderCommands();
 
-  if (!profile) {
+  if (!profileSet) {
     return (
       <Dropzone
         onDrop={(acceptedFiles) => {
@@ -176,7 +204,9 @@ export const ProfileControls: React.FC = () => {
       {profile && !profileExecutionEnabled ? (
         <div
           className={'absolute top-2 right-2 cursor-pointer'}
-          onClick={() => dispatch(Actions.setProfile())}
+          onClick={() =>
+            dispatch(Actions.resetProfileDraft({ target: 'roast' }))
+          }
         >
           <FontAwesomeIcon icon={faXmark} size="lg" />
         </div>
@@ -221,7 +251,8 @@ export const ProfileControls: React.FC = () => {
             >
               Cooldown
             </Button>
-            <DownloadButton className={'w-35'} />
+            <DownloadProfileButton className={'w-30'} />
+            <DownloadLogButton className={'w-30'} />
           </div>
           <div>Events</div>
           <div className={'flex flex-row flex-wrap gap-2 justify-center'}>

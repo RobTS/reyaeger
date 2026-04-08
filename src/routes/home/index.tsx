@@ -7,6 +7,7 @@ import { useYaegerLastMessage } from '../../hooks/useYaeger.ts';
 import { RoastingControls } from './controls.tsx';
 import { ProfileControls } from './profile.tsx';
 import { DateTime } from 'luxon';
+import { NewRoastingLineChart } from './newChart.tsx';
 
 const EtCard = () => {
   const lastMessage = useYaegerLastMessage();
@@ -40,13 +41,20 @@ export const HomePage: React.FC = () => {
     <Layout>
       <div className={'flex flex-col gap-4'}>
         <div className={'flex flex-row gap-4 justify-stretch max-md:flex-wrap'}>
-          <div
-            className={
-              'border border-gray-300 p-2 rounded-2xl w-full max-h-100 min-h-100'
-            }
-          >
-            <RoastingLineChart />
-          </div>
+          {/* eslint-disable-next-line no-constant-condition */}
+          {true ? (
+            <div>
+              <NewRoastingLineChart />
+            </div>
+          ) : (
+            <div
+              className={
+                'border border-gray-300 p-2 rounded-2xl w-full max-h-100 min-h-100'
+              }
+            >
+              <RoastingLineChart />
+            </div>
+          )}
           <div
             className={
               'flex lg:flex-col max-md:flex-row flex-wrap gap-4 justify-between max-md:w-full'

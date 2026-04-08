@@ -48,7 +48,7 @@ export const RecorderProvider: React.FC<Props> = ({ children }) => {
 
   useEffect(() => {
     if (!lastMessage) return;
-    //if (!recording) return;
+    if (!recording) return;
 
     if (last(records)?.time !== lastMessage.time)
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -58,7 +58,7 @@ export const RecorderProvider: React.FC<Props> = ({ children }) => {
           ...lastMessage,
         },
       ]);
-  }, [lastMessage, records]);
+  }, [lastMessage, recording, records]);
 
   const providerProps = useMemo<RecorderContextType>(() => {
     return {

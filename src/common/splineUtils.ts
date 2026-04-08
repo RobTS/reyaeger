@@ -1,11 +1,26 @@
-import { curveMonotoneX, line, scaleLinear } from 'd3';
+import {
+  curveBasis,
+  curveCatmullRom,
+  curveMonotoneX,
+  line,
+  scaleLinear,
+} from 'd3';
 import { svgPathProperties } from 'svg-path-properties';
+
+export const calculateRoR = (values: [number, number][]): [number, number][] =>
+  values.map(([time, value], i): [number, number] => {
+    if (i === 0) return [0, 0];
+    const deltaTime = time - values[i - 1]![0]!;
+    const deltaTemp = value - values[i - 1]![1]!;
+    return [time, deltaTime > 0 ? deltaTemp / deltaTime : 0];
+  });
 
 export const getPathForPoints = (
   points: [number, number][],
   options: {
     scaleX?: { domain: [number, number]; range: [number, number] };
     scaleY?: { domain: [number, number]; range: [number, number] };
+    curve?: 'monotone' | 'catmullRom' | 'basis';
   } = {},
 ): string | undefined => {
   const lineAlgo = line();
@@ -13,17 +28,27 @@ export const getPathForPoints = (
   if (options.scaleX) {
     const xScale = scaleLinear()
       .domain(options.scaleX.domain)
-      .range(options.scaleX.range);
+      .range(options.scaleX.range)
+      .clamp(true);
     lineAlgo.x((d) => xScale(d[0]));
   }
   if (options.scaleY) {
     const yScale = scaleLinear()
       .domain(options.scaleY.domain)
-      .range(options.scaleY.range);
+      .range(options.scaleY.range)
+      .clamp(true);
     lineAlgo.y((d) => yScale(d[1]));
   }
 
-  lineAlgo.curve(curveMonotoneX);
+  if (!options.curve || options.curve === 'monotone') {
+    lineAlgo.curve(curveMonotoneX);
+  }
+  if (options.curve === 'catmullRom') {
+    lineAlgo.curve(curveCatmullRom);
+  }
+  if (options.curve === 'basis') {
+    lineAlgo.curve(curveBasis);
+  }
 
   return lineAlgo(points) || undefined;
 };
