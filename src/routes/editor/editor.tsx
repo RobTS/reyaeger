@@ -337,7 +337,10 @@ export const BezierCurveEditor: React.FC<Props> = ({
       }
     };
 
-    updateDimensions();
+    setTimeout(() => {
+      updateDimensions();
+    }, 0);
+
     window.addEventListener('resize', updateDimensions);
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
@@ -872,7 +875,7 @@ export const BezierCurveEditor: React.FC<Props> = ({
       ) : null}
       <canvas
         ref={canvasRef}
-        className="w-full min-h-75 rounded-lg cursor-crosshair"
+        className="w-full min-h-75 rounded-lg cursor-crosshair bg-black"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
