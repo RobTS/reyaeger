@@ -29,6 +29,7 @@ import {
   useRecorderRecords,
   useRecorderStartDate,
 } from '../../hooks/useRecorder.ts';
+import { useYaegerLastMessage } from '../../hooks/useYaeger.ts';
 
 const MAX_TEMP = 250;
 
@@ -85,6 +86,7 @@ export const BezierCurveEditor: React.FC<Props> = ({
   const [activePhase, setActivePhase] = useState<
     { type: 'heater' | 'fan'; index: number } | undefined
   >(undefined);
+  const lastMessage = useYaegerLastMessage();
   const records = useRecorderRecords();
   const events = useRecorderEvents();
   const start = useRecorderStartDate();
@@ -593,6 +595,7 @@ export const BezierCurveEditor: React.FC<Props> = ({
     dataPaths,
     events,
     start,
+    lastMessage,
   ]);
 
   const handleMouseDown = useCallback(

@@ -49,15 +49,13 @@ export const RecorderProvider: React.FC<Props> = ({ children }) => {
   useEffect(() => {
     if (!lastMessage) return;
     if (!recording) return;
-
-    if (last(records)?.time !== lastMessage.time)
+    const previousRecord = last(records);
+    if (!previousRecord) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setRecords([
-        ...records,
-        {
-          ...lastMessage,
-        },
-      ]);
+      return setRecords([lastMessage]);
+    }
+    if (lastMessage.time.diff(previousRecord.time).as('milliseconds') > 1000)
+      setRecords([...records, lastMessage]);
   }, [lastMessage, recording, records]);
 
   const providerProps = useMemo<RecorderContextType>(() => {

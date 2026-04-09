@@ -46,7 +46,7 @@ export const ProfileExecutionProvider: React.FC<Props> = ({ children }) => {
     (cooldown?: boolean) => {
       setStartDate(undefined);
       if (cooldown) {
-        sendCommand({ FanVal: 65, Setpoint: 0 });
+        sendCommand({ FanVal: 65, Setpoint: 0, Mode: 'Manual', BurnerVal: 0 });
       }
     },
     [sendCommand],
