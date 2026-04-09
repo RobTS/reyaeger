@@ -833,7 +833,12 @@ export const BezierCurveEditor: React.FC<Props> = ({
                       get(jsonData, 'heaterPhases') &&
                       get(jsonData, 'fanPhases')
                     ) {
-                      dispatch(Actions.prefillProfileDraft(jsonData));
+                      dispatch(
+                        Actions.prefillProfileDraft({
+                          target: draftType,
+                          profile: jsonData,
+                        }),
+                      );
                     }
                     if (get(jsonData, 'steps')) {
                       dispatch(
