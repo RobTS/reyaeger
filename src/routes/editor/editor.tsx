@@ -30,8 +30,17 @@ import {
   useRecorderStartDate,
 } from '../../hooks/useRecorder.ts';
 import { useYaegerLastMessage } from '../../hooks/useYaeger.ts';
+import {
+  percentToY,
+  tempToY,
+  timeToX,
+  xToTime,
+  yToPercent,
+  yToTemp,
+} from '../../common/canvasUtils.ts';
 
 const MAX_TEMP = 250;
+const MAX_PERCENT = 100;
 
 const DownloadButton: React.FC<{ className?: string }> = ({ className }) => {
   const profileDraft = useAppSelector((s) => s.editor.editorDraft);
@@ -108,10 +117,17 @@ export const BezierCurveEditor: React.FC<Props> = ({
       }
     | undefined
   >(undefined);
+  const [cursorPosition, setCursorPosition] = useState<
+    | {
+        x: number;
+        y: number;
+      }
+    | undefined
+  >(undefined);
   const [dimensions, setDimensions] = useState({ width: 600, height: 400 });
 
   const padding = useMemo(
-    () => ({ top: 40, right: 60, bottom: 50, left: 60 }),
+    () => ({ top: 40, right: 60, bottom: 80, left: 60 }),
     [],
   );
   const chartWidth = dimensions.width - padding.left - padding.right;
@@ -128,7 +144,7 @@ export const BezierCurveEditor: React.FC<Props> = ({
               range: [padding.left, dimensions.width - padding.right],
             },
             scaleY: {
-              domain: [0, 250],
+              domain: [0, MAX_TEMP],
               range: [dimensions.height - padding.bottom, padding.top],
             },
           },
@@ -198,7 +214,7 @@ export const BezierCurveEditor: React.FC<Props> = ({
           range: [padding.left, dimensions.width - padding.right],
         },
         scaleY: {
-          domain: [0, 250],
+          domain: [0, MAX_TEMP],
           range: [dimensions.height - padding.bottom, padding.top],
         },
         curve: 'catmullRom',
@@ -211,7 +227,7 @@ export const BezierCurveEditor: React.FC<Props> = ({
           range: [padding.left, dimensions.width - padding.right],
         },
         scaleY: {
-          domain: [0, 250],
+          domain: [0, MAX_TEMP],
           range: [dimensions.height - padding.bottom, padding.top],
         },
         curve: 'catmullRom',
@@ -284,7 +300,7 @@ export const BezierCurveEditor: React.FC<Props> = ({
                   range: [padding.left, dimensions.width - padding.right],
                 },
                 scaleY: {
-                  domain: [0, 250],
+                  domain: [0, MAX_TEMP],
                   range: [dimensions.height - padding.bottom, padding.top],
                 },
               },
@@ -306,7 +322,7 @@ export const BezierCurveEditor: React.FC<Props> = ({
                   range: [padding.left, dimensions.width - padding.right],
                 },
                 scaleY: {
-                  domain: [0, 100],
+                  domain: [0, MAX_PERCENT],
                   range: [dimensions.height - padding.bottom, padding.top],
                 },
               },
@@ -362,21 +378,13 @@ export const BezierCurveEditor: React.FC<Props> = ({
     ctx.fillStyle = 'hsl(240 10% 10%)';
     ctx.fillRect(0, 0, dimensions.width, dimensions.height);
 
-    // Helper functions
-    const timeToX = (time: number) =>
-      padding.left + (time / totalTimeSeconds) * chartWidth;
-    const tempToY = (temp: number) =>
-      padding.top + chartHeight - (temp / 250) * chartHeight;
-    const speedToY = (speed: number) =>
-      padding.top + chartHeight - (speed / 100) * chartHeight;
-
     // Draw grid
     ctx.strokeStyle = 'hsl(240 10% 20%)';
     ctx.lineWidth = 1;
 
     // Vertical grid lines (time)
     for (let i = 0; i <= Math.floor(totalTimeSeconds / 60); i++) {
-      const x = timeToX(i * 60);
+      const x = timeToX(i * 60, totalTimeSeconds, dimensions, padding);
       ctx.beginPath();
       ctx.moveTo(x, padding.top);
       ctx.lineTo(x, padding.top + chartHeight);
@@ -385,8 +393,8 @@ export const BezierCurveEditor: React.FC<Props> = ({
 
     // Horizontal grid lines (temperature)
     const tempStep = 25;
-    for (let temp = 0; temp <= MAX_TEMP + 20; temp += tempStep) {
-      const y = tempToY(temp);
+    for (let temp = 0; temp <= MAX_TEMP; temp += tempStep) {
+      const y = tempToY(temp, MAX_TEMP, dimensions, padding);
       ctx.beginPath();
       ctx.moveTo(padding.left, y);
       ctx.lineTo(padding.left + chartWidth, y);
@@ -400,20 +408,74 @@ export const BezierCurveEditor: React.FC<Props> = ({
 
     // Time labels
     for (let i = 0; i <= totalTimeSeconds; i += 30) {
-      const x = timeToX(i);
+      const x = timeToX(i, totalTimeSeconds, dimensions, padding);
       ctx.fillText(
         Duration.fromDurationLike({ seconds: i }).toFormat('mm:ss'),
         x,
-        dimensions.height - 30,
+        dimensions.height - padding.bottom + 20,
       );
     }
 
     // Temperature labels
     ctx.textAlign = 'right';
     for (let temp = 0; temp <= MAX_TEMP + 20; temp += tempStep) {
-      const y = tempToY(temp);
+      const y = tempToY(temp, MAX_TEMP, dimensions, padding);
       ctx.fillText(`${temp}°C`, padding.left - 10, y + 4);
     }
+
+    // Percentage labels
+    const percentStep = 10;
+    ctx.textAlign = 'left';
+    for (let percent = 0; percent <= 100; percent += percentStep) {
+      const y = percentToY(percent, MAX_PERCENT, dimensions, padding);
+      ctx.fillText(`${percent}%`, dimensions.width - padding.right + 10, y + 4);
+    }
+
+    // LEGEND
+    const legendItems: { color: string; name: string }[] = [
+      {
+        color: 'rgba(255,255,0, 0.5)',
+        name: 'Profile Temp',
+      },
+      {
+        color: 'rgb(0 197 202)',
+        name: 'Profile Fan',
+      },
+      {
+        color: 'rgb(255 121 36 / 0.9)',
+        name: 'Heater Power',
+      },
+      {
+        color: 'rgb(207 213 255 / 0.84)',
+        name: 'Fan Power',
+      },
+      {
+        color: 'rgb(255 4 92 / 0.84)',
+        name: 'Exhaust Temp',
+      },
+      {
+        color: 'rgb(255 218 80 / 0.84)',
+        name: 'Bean Temp',
+      },
+      {
+        color: 'rgb(35 255 52 / 0.4)',
+        name: 'ET RoR',
+      },
+      {
+        color: 'rgb(166 31 255 / 0.6)',
+        name: 'BT RoR',
+      },
+    ];
+
+    legendItems.forEach(({ name, color }, i) => {
+      ctx.fillStyle = color;
+      ctx.textAlign = 'center';
+      ctx.fillText(
+        `■ ${name}`,
+        dimensions.width / 2 + (i - (legendItems.length - 1) / 2) * 100,
+        dimensions.height - padding.bottom + 60,
+      );
+    });
 
     // Draw Paths
     if (dataPaths?.etRorPath) {
@@ -444,16 +506,6 @@ export const BezierCurveEditor: React.FC<Props> = ({
       ctx.stroke(referenceFanCurvePath);
     }
 
-    if (dataPaths?.etPath) {
-      ctx.strokeStyle = 'rgb(255 4 92 / 0.84)';
-      ctx.lineWidth = 3;
-      ctx.stroke(dataPaths.etPath);
-    }
-    if (dataPaths?.btPath) {
-      ctx.strokeStyle = 'rgb(86 159 255 / 0.84)';
-      ctx.lineWidth = 3;
-      ctx.stroke(dataPaths.btPath);
-    }
     if (dataPaths?.fanPath) {
       ctx.strokeStyle = 'rgb(207 213 255 / 0.84)';
       ctx.lineWidth = 3;
@@ -461,9 +513,20 @@ export const BezierCurveEditor: React.FC<Props> = ({
     }
 
     if (dataPaths?.heaterPath) {
-      ctx.strokeStyle = 'rgb(255 218 80 / 0.84)';
+      ctx.strokeStyle = 'rgb(253 163 107 / 0.9)';
       ctx.lineWidth = 3;
       ctx.stroke(dataPaths.heaterPath);
+    }
+
+    if (dataPaths?.btPath) {
+      ctx.strokeStyle = 'rgb(255 218 80 / 0.84)';
+      ctx.lineWidth = 3;
+      ctx.stroke(dataPaths.btPath);
+    }
+    if (dataPaths?.etPath) {
+      ctx.strokeStyle = 'rgb(255 4 92 / 0.84)';
+      ctx.lineWidth = 3;
+      ctx.stroke(dataPaths.etPath);
     }
 
     ctx.strokeStyle = 'rgb(4 249 255 / 0.5)';
@@ -475,15 +538,36 @@ export const BezierCurveEditor: React.FC<Props> = ({
       ctx.strokeStyle = 'rgb(255 21 21 / 0.7)';
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.moveTo(timeToX(event.time.diff(start).as('seconds')), speedToY(100));
-      ctx.lineTo(timeToX(event.time.diff(start).as('seconds')), speedToY(0));
+      ctx.moveTo(
+        timeToX(
+          event.time.diff(start).as('seconds'),
+          totalTimeSeconds,
+          dimensions,
+          padding,
+        ),
+        percentToY(100, MAX_PERCENT, dimensions, padding),
+      );
+      ctx.lineTo(
+        timeToX(
+          event.time.diff(start).as('seconds'),
+          totalTimeSeconds,
+          dimensions,
+          padding,
+        ),
+        percentToY(0, MAX_PERCENT, dimensions, padding),
+      );
       ctx.stroke();
       ctx.textAlign = 'left';
       ctx.fillStyle = 'rgb(255 21 21)';
       ctx.fillText(
         event.label,
-        timeToX(event.time.diff(start!).as('seconds')) + 4,
-        speedToY(0),
+        timeToX(
+          event.time.diff(start!).as('seconds'),
+          totalTimeSeconds,
+          dimensions,
+          padding,
+        ) + 4,
+        percentToY(0, MAX_PERCENT, dimensions, padding),
       );
     });
 
@@ -492,15 +576,21 @@ export const BezierCurveEditor: React.FC<Props> = ({
       ctx.strokeStyle = 'rgb(255 255 255 / 0.7)';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(timeToX(seconds), speedToY(100));
-      ctx.lineTo(timeToX(seconds), speedToY(0));
+      ctx.moveTo(
+        timeToX(seconds, totalTimeSeconds, dimensions, padding),
+        percentToY(100, MAX_PERCENT, dimensions, padding),
+      );
+      ctx.lineTo(
+        timeToX(seconds, totalTimeSeconds, dimensions, padding),
+        percentToY(0, MAX_PERCENT, dimensions, padding),
+      );
       ctx.stroke();
     }
 
     heaterPhases.forEach((point, index) => {
       const p = {
-        x: timeToX(point.time),
-        y: tempToY(point.temperature),
+        x: timeToX(point.time, totalTimeSeconds, dimensions, padding),
+        y: tempToY(point.temperature, MAX_TEMP, dimensions, padding),
       };
 
       // Draw Points
@@ -523,8 +613,8 @@ export const BezierCurveEditor: React.FC<Props> = ({
 
     fanPhases.forEach((point, index) => {
       const p = {
-        x: timeToX(point.time),
-        y: speedToY(point.fanSpeed),
+        x: timeToX(point.time, totalTimeSeconds, dimensions, padding),
+        y: percentToY(point.fanSpeed, MAX_PERCENT, dimensions, padding),
       };
 
       // Draw Points
@@ -547,7 +637,12 @@ export const BezierCurveEditor: React.FC<Props> = ({
 
     // Draw current time marker
     if (currentTime > 0 && currentTime <= totalTimeSeconds) {
-      const currentX = timeToX(currentTime);
+      const currentX = timeToX(
+        currentTime,
+        totalTimeSeconds,
+        dimensions,
+        padding,
+      );
       ctx.strokeStyle = 'hsl(140, 60%, 50%)';
       ctx.lineWidth = 2;
       ctx.setLineDash([4, 4]);
@@ -559,7 +654,12 @@ export const BezierCurveEditor: React.FC<Props> = ({
 
       // Draw actual temperature point if available
       if (currentTemperature !== undefined) {
-        const actualY = tempToY(currentTemperature);
+        const actualY = tempToY(
+          currentTemperature,
+          MAX_TEMP,
+          dimensions,
+          padding,
+        );
         ctx.beginPath();
         ctx.arc(currentX, actualY, 8, 0, Math.PI * 2);
         ctx.fillStyle = 'hsl(140, 60%, 50%)';
@@ -570,11 +670,31 @@ export const BezierCurveEditor: React.FC<Props> = ({
       }
     }
 
+    if (cursorPosition) {
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgb(255 255 255 / 0.9)';
+      for (let percent = 0; percent <= 100; percent += percentStep) {
+        ctx.fillText(
+          [
+            `Time: ${Duration.fromDurationLike({ seconds: xToTime(cursorPosition.x, totalTimeSeconds, dimensions, padding) }).toFormat('mm:ss')}`,
+            `${yToTemp(cursorPosition.y, MAX_TEMP, dimensions, padding).toFixed(1)}°C`,
+            `${yToPercent(cursorPosition.y, MAX_PERCENT, dimensions, padding).toFixed(1)}%`,
+          ].join(', '),
+          cursorPosition.x,
+          padding.top - 5,
+        );
+      }
+    }
+
     // Axis labels
     ctx.fillStyle = 'hsl(0 0% 70%)';
     ctx.font = '14px Geist, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Time', dimensions.width / 2 + 10, dimensions.height - 12);
+    ctx.fillText(
+      'Time',
+      dimensions.width / 2,
+      dimensions.height - padding.bottom + 38,
+    );
 
     ctx.save();
     ctx.translate(15, dimensions.height / 2);
@@ -599,6 +719,7 @@ export const BezierCurveEditor: React.FC<Props> = ({
     events,
     start,
     lastMessage,
+    cursorPosition,
   ]);
 
   const handleMouseDown = useCallback(
@@ -612,8 +733,8 @@ export const BezierCurveEditor: React.FC<Props> = ({
 
       const chartTimeSeconds =
         ((x - padding.left) / chartWidth) * totalTimeSeconds;
-      const chartTemp = (1 - (y - padding.top) / chartHeight) * 250;
-      const chartFan = (1 - (y - padding.top) / chartHeight) * 100;
+      const chartTemp = (1 - (y - padding.top) / chartHeight) * MAX_TEMP;
+      const chartFan = (1 - (y - padding.top) / chartHeight) * MAX_PERCENT;
       let heaterIndex = 0;
       for (const point of heaterPhases) {
         if (
@@ -656,8 +777,6 @@ export const BezierCurveEditor: React.FC<Props> = ({
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
-      if (draggingPoint === undefined) return;
-
       const canvas = canvasRef.current;
       if (!canvas) return;
 
@@ -665,17 +784,34 @@ export const BezierCurveEditor: React.FC<Props> = ({
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
 
+      if (x >= 0 && y >= 0)
+        setCursorPosition(
+          draggingPoint
+            ? undefined
+            : {
+                x: Math.min(
+                  Math.max(padding.left, x),
+                  dimensions.width - padding.right,
+                ),
+                y: Math.min(
+                  Math.max(padding.top, y),
+                  dimensions.height - padding.bottom,
+                ),
+              },
+        );
+      if (draggingPoint === undefined) return;
+
       const newTime = Math.max(
         0,
         Math.min(
           totalTimeSeconds,
-          ((x - padding.left) * totalTimeSeconds) / chartWidth,
+          xToTime(x, totalTimeSeconds, dimensions, padding),
         ),
       );
       if (draggingPoint.type === 'heater') {
         const newTemperature = Math.max(
           0,
-          Math.min(250, (1 - (y - padding.top) / chartHeight) * 250),
+          Math.min(MAX_TEMP, yToTemp(y, MAX_TEMP, dimensions, padding)),
         );
         dispatch(
           Actions.changeHeaterPhase({
@@ -690,7 +826,7 @@ export const BezierCurveEditor: React.FC<Props> = ({
       if (draggingPoint.type === 'fan') {
         const newSpeed = Math.max(
           0,
-          Math.min(250, (1 - (y - padding.top) / chartHeight) * 100),
+          Math.min(250, yToPercent(y, MAX_PERCENT, dimensions, padding)),
         );
         dispatch(
           Actions.changeFanPhase({
@@ -702,16 +838,7 @@ export const BezierCurveEditor: React.FC<Props> = ({
         );
       }
     },
-    [
-      draggingPoint,
-      totalTimeSeconds,
-      padding.left,
-      padding.top,
-      chartWidth,
-      chartHeight,
-      dispatch,
-      draftType,
-    ],
+    [draggingPoint, padding, dimensions, totalTimeSeconds, dispatch, draftType],
   );
 
   const handleMouseUp = useCallback(() => {
