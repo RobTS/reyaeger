@@ -10,7 +10,11 @@ import React, {
 import { useAppDispatch, useAppSelector } from '../../state/store.ts';
 import { DateTime, Duration } from 'luxon';
 import { Actions } from '../../state/actions';
-import { calculateRoR, getPathForPoints } from '../../common/splineUtils.ts';
+import {
+  calculateRoR,
+  getPathForPoints,
+  movingAverage,
+} from '../../common/splineUtils.ts';
 import { get, last } from 'lodash-es';
 import { Button } from '../../components/button/button.tsx';
 import {
@@ -234,7 +238,7 @@ export const BezierCurveEditor: React.FC<Props> = ({
       }),
     );
     const etRorPath = new Path2D(
-      getPathForPoints(calculateRoR(etValues), {
+      getPathForPoints(movingAverage(calculateRoR(etValues), 5), {
         scaleX: {
           domain: [0, totalTimeSeconds],
           range: [padding.left, dimensions.width - padding.right],
@@ -247,7 +251,7 @@ export const BezierCurveEditor: React.FC<Props> = ({
       }),
     );
     const btRorPath = new Path2D(
-      getPathForPoints(calculateRoR(btValues), {
+      getPathForPoints(movingAverage(calculateRoR(btValues), 5), {
         scaleX: {
           domain: [0, totalTimeSeconds],
           range: [padding.left, dimensions.width - padding.right],
@@ -273,7 +277,7 @@ export const BezierCurveEditor: React.FC<Props> = ({
       }),
     );
     const heaterPath = new Path2D(
-      getPathForPoints(heaterValues, {
+      getPathForPoints(movingAverage(heaterValues, 5), {
         scaleX: {
           domain: [0, totalTimeSeconds],
           range: [padding.left, dimensions.width - padding.right],

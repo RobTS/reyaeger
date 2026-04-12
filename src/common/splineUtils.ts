@@ -6,6 +6,7 @@ import {
   scaleLinear,
 } from 'd3';
 import { svgPathProperties } from 'svg-path-properties';
+import { cloneDeep } from 'lodash-es';
 
 export const calculateRoR = (values: [number, number][]): [number, number][] =>
   values.map(([time, value], i): [number, number] => {
@@ -14,6 +15,24 @@ export const calculateRoR = (values: [number, number][]): [number, number][] =>
     const deltaTemp = value - values[i - 1]![1]!;
     return [time, deltaTime > 0 ? deltaTemp / deltaTime : 0];
   });
+
+export const movingAverage = (
+  values: [number, number][],
+  N: number,
+): [number, number][] => {
+  let i = 0;
+  let sum = 0;
+  const means = cloneDeep(values);
+  for (let n = Math.min(N - 1, values.length); i < n; ++i) {
+    sum += values[i]![1];
+  }
+  for (let n = values.length; i < n; ++i) {
+    sum += values[i]![1];
+    means[i]![1] = sum / N;
+    sum -= values[i - N + 1]![1];
+  }
+  return means;
+};
 
 export const getPathForPoints = (
   points: [number, number][],
