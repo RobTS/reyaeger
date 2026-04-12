@@ -11,6 +11,8 @@ export type YaegerPreferences = {
   pidKp: number;
   pidKi: number;
   pidKd: number;
+  wifiSsid?: string;
+  wifiPass?: string;
   cooldownFanSpeed?: number;
 };
 
