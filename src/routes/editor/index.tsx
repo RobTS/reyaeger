@@ -6,7 +6,7 @@ export const EditorPage: React.FC = () => {
   return (
     <Layout>
       <div className={'flex flex-row gap-4'}>
-        <BezierCurveEditor />
+        <BezierCurveEditor draftType={'editor'} showRecording={false} />
       </div>
     </Layout>
   );

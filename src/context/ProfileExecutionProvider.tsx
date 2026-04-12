@@ -6,11 +6,6 @@ import {
 } from './ProfileExecutionContext.ts';
 import { ProfileProcessor } from '../common/profileProcessor.ts';
 import { DateTime } from 'luxon';
-import {
-  usePidControlCommands,
-  usePidControlSetpoint,
-  usePidControlStatus,
-} from '../hooks/usePidControl.ts';
 import { useYaegerCommands, useYaegerLastMessage } from '../hooks/useYaeger.ts';
 import { useAppSelector } from '../state/store.ts';
 
@@ -19,11 +14,8 @@ type Props = {
 };
 
 export const ProfileExecutionProvider: React.FC<Props> = ({ children }) => {
-  const profile = useAppSelector((s) => s.profile.selectedProfile.profile);
+  const profile = useAppSelector((s) => s.editor.roastDraft);
   const [startDate, setStartDate] = useState<DateTime | undefined>();
-  const setSetpoint = usePidControlSetpoint()[1];
-  const setPidEnabled = usePidControlStatus()[1];
-  const { reset } = usePidControlCommands();
   const { sendCommand } = useYaegerCommands();
   const lastMessage = useYaegerLastMessage();
 
@@ -35,32 +27,29 @@ export const ProfileExecutionProvider: React.FC<Props> = ({ children }) => {
   useEffect(() => {
     if (!startDate) return;
 
-    const timeElapsed = -startDate.diffNow().as('milliseconds');
+    const timeElapsed = Math.abs(startDate.diffNow().as('milliseconds'));
     const config = profileProcessor?.getConfigAtTime(timeElapsed);
     if (!config) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setStartDate(undefined);
       return;
     }
-    setSetpoint(config.setpoint);
-    if (config.fanValue !== undefined) sendCommand({ FanVal: config.fanValue });
-  }, [profileProcessor, sendCommand, setSetpoint, startDate, lastMessage]);
+    sendCommand({ Setpoint: config.setpoint, FanVal: config.fanValue });
+  }, [profileProcessor, sendCommand, startDate, lastMessage]);
 
   const start = useCallback(() => {
-    setPidEnabled(true);
     setStartDate(DateTime.now());
-    reset();
-  }, [reset, setPidEnabled]);
+    sendCommand({ Mode: 'PID' });
+  }, [sendCommand]);
 
   const stop = useCallback(
     (cooldown?: boolean) => {
       setStartDate(undefined);
       if (cooldown) {
-        setSetpoint(0);
-        sendCommand({ FanVal: 65 });
+        sendCommand({ FanVal: 65, Setpoint: 0, Mode: 'Manual', BurnerVal: 0 });
       }
     },
-    [sendCommand, setSetpoint],
+    [sendCommand],
   );
 
   const providerProps = useMemo((): ProfileExecutionContextType => {

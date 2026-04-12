@@ -10,31 +10,31 @@ import type {
 import { DateTime } from 'luxon';
 
 export const convertNxProfileToLegacyProfile = (profileDraft: NxProfile) => {
-  const duration = last(profileDraft.heaterPhases)!.time;
-
-  const heaterCurve = getCurveForPoints(
+  const duration = Math.max(
+    last(profileDraft.heaterPhases)?.time || 0,
+    last(profileDraft.fanPhases)?.time || 0,
+  );
+  if (!duration) return { steps: [] };
+  const steps: LegacyProfileStep[] = times(duration + 1).map(() => ({
+    duration: 1,
+    setpoint: 0,
+    fanValue: 0,
+    interpolation: 'linear',
+  }));
+  getCurveForPoints(
     profileDraft.heaterPhases.map((p) => [p.time, p.temperature]),
-    duration,
-  );
-  const fanCurve = getCurveForPoints(
+    duration * 4,
+  ).forEach(([time, temp]) => {
+    if (steps[Math.floor(time)]) steps[Math.floor(time)]!.setpoint = temp;
+  });
+  getCurveForPoints(
     profileDraft.fanPhases.map((p) => [p.time, p.fanSpeed]),
-    duration,
-  );
-
+    duration * 4,
+  ).forEach(([time, fanValue]) => {
+    if (steps[Math.floor(time)]) steps[Math.floor(time)]!.fanValue = fanValue;
+  });
   return {
-    steps: times(duration).map((i): LegacyProfileStep => {
-      const heaterValue = heaterCurve[i]!;
-      const previousHeaterValue = heaterCurve[i - 1];
-      const duration = previousHeaterValue
-        ? heaterValue[0] - previousHeaterValue[0]
-        : 1;
-
-      return {
-        duration,
-        fanValue: fanCurve[i]![1],
-        setpoint: heaterValue[1],
-      };
-    }),
+    steps,
   };
 };
 

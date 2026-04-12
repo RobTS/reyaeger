@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   type ConnectionContextType,
   type WsStatus,
+  type YaegerCommand,
   YaegerConnectionContext,
 } from './YaegerConnectionContext.ts';
 import { DateTime } from 'luxon';
@@ -32,9 +33,7 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
     YaegerPreferencesMessage | undefined
   >();
   const [error, setError] = useState<Error | undefined>();
-  const commandsToSend = useRef<
-    { BurnerVal?: number; FanVal?: number } | undefined
-  >(undefined);
+  const commandsToSend = useRef<YaegerCommand | undefined>(undefined);
 
   useEffect(() => {
     const websocket = new WebSocket(`ws://${host}/ws`);
@@ -58,6 +57,7 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
         const message: YaegerMessage = JSON.parse(event.data).data;
         if (message) {
           if (message.type === 'status') {
+            //console.log('Received message', message);
             setLastMessage({ time: DateTime.now(), message });
           }
           if (message.type === 'preferences') {
@@ -90,13 +90,13 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
     const interval = setInterval(() => {
       const cmd = commandsToSend.current;
       commandsToSend.current = undefined;
-      ws?.send(
-        JSON.stringify({
-          id: DateTime.now().toMillis(),
-          command: 'getData',
-          ...(cmd ? cmd : {}),
-        }),
-      );
+      const message = {
+        id: DateTime.now().toMillis(),
+        command: 'getData',
+        ...(cmd ? cmd : {}),
+      };
+      //console.log('Sending message', message);
+      ws?.send(JSON.stringify(message));
     }, 1000 / 10);
 
     return () => {
@@ -104,15 +104,12 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
     };
   }, [host, status, ws]);
 
-  const sendCommand = useCallback(
-    (command: { BurnerVal?: number; FanVal?: number }) => {
-      commandsToSend.current = {
-        ...(commandsToSend.current || {}),
-        ...command,
-      };
-    },
-    [],
-  );
+  const sendCommand = useCallback((command: YaegerCommand) => {
+    commandsToSend.current = {
+      ...(commandsToSend.current || {}),
+      ...command,
+    };
+  }, []);
 
   const savePreferences = useCallback(
     (preferences: Partial<YaegerPreferences>) => {
@@ -127,6 +124,15 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
     [ws],
   );
 
+  const startAutotune = useCallback(() => {
+    ws?.send(
+      JSON.stringify({
+        id: DateTime.now().toMillis(),
+        command: 'autotune',
+      }),
+    );
+  }, [ws]);
+
   const providerProps = useMemo<ConnectionContextType>(() => {
     return {
       status,
@@ -136,6 +142,7 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
       error,
       preferences,
       setPreferences: savePreferences,
+      startAutotune,
     };
   }, [
     status,
@@ -145,6 +152,7 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
     error,
     preferences,
     savePreferences,
+    startAutotune,
   ]);
 
   return (

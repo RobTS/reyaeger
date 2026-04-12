@@ -5,7 +5,6 @@ import { BrowserRouter, Route, Routes } from 'react-router';
 import { HomePage } from './routes/home';
 import { YaegerConnectionProvider } from './context/YaegerConnectionProvider.tsx';
 import { RecorderProvider } from './context/RecorderProvider.tsx';
-import { PidControlProvider } from './context/PidControlProvider.tsx';
 import { ProfileExecutionProvider } from './context/ProfileExecutionProvider.tsx';
 import { EditorPage } from './routes/editor';
 import { SettingsPage } from './routes/settings';
@@ -17,19 +16,17 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ReduxProvider>
       <YaegerConnectionProvider host={HOST}>
-        <PidControlProvider>
-          <RecorderProvider>
-            <ProfileExecutionProvider>
-              <BrowserRouter basename={import.meta.env.BASE_URL}>
-                <Routes>
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/editor" element={<EditorPage />} />
-                  <Route path="/settings" element={<SettingsPage />} />
-                </Routes>
-              </BrowserRouter>
-            </ProfileExecutionProvider>
-          </RecorderProvider>
-        </PidControlProvider>
+        <RecorderProvider>
+          <ProfileExecutionProvider>
+            <BrowserRouter basename={import.meta.env.BASE_URL}>
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/editor" element={<EditorPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+              </Routes>
+            </BrowserRouter>
+          </ProfileExecutionProvider>
+        </RecorderProvider>
       </YaegerConnectionProvider>
     </ReduxProvider>
   </StrictMode>,

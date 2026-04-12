@@ -1,66 +1,40 @@
-import type {
-  LegacyProfile,
-  LegacyProfileStep,
-  NxProfile,
-} from '../types/profile.ts';
+import type { LegacyProfile, NxProfile } from '../types/profile.ts';
 import { convertNxProfileToLegacyProfile } from './profileUtils.ts';
-
-const interpolateSetpoint = (
-  start: number,
-  end: number,
-  progress: number,
-  type: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out',
-): number => {
-  switch (type) {
-    case 'linear':
-      return start + (end - start) * progress;
-    case 'ease-in':
-      return start + (end - start) * Math.pow(progress, 2);
-    case 'ease-out':
-      return start + (end - start) * (1 - Math.pow(1 - progress, 2));
-    case 'ease-in-out':
-      return (
-        start +
-        (end - start) *
-          (progress < 0.5
-            ? 2 * Math.pow(progress, 2)
-            : 1 - Math.pow(-2 * progress + 2, 2) / 2)
-      );
-    default:
-      return end;
-  }
-};
+import { cloneDeep, last } from 'lodash-es';
 
 export class ProfileProcessor {
   private legacyProfile: LegacyProfile;
   constructor(profile: NxProfile) {
+    // Extend Profile by 1s to correctly perform last instructions
+    const copy = cloneDeep(profile);
+    const lastHeaterPhase = last(copy.heaterPhases);
+    if (lastHeaterPhase)
+      copy.heaterPhases.push({
+        ...lastHeaterPhase,
+        time: lastHeaterPhase.time + 1,
+      });
+    const lastFanPhase = last(copy.fanPhases);
+    if (lastFanPhase)
+      copy.fanPhases.push({
+        ...lastFanPhase,
+        time: lastFanPhase.time + 1,
+      });
     this.legacyProfile = convertNxProfileToLegacyProfile(profile);
   }
 
   getConfigAtTime(
     millis: number,
-  ): { setpoint: number; fanValue: number | undefined } | undefined {
+  ): { setpoint: number; fanValue: number } | undefined {
     if (!this.legacyProfile) return;
-    let previousStep: LegacyProfileStep | undefined = undefined;
     for (const step of this.legacyProfile.steps) {
       const stepDurationMs = step.duration * 1000;
       if (millis > stepDurationMs) {
         millis -= stepDurationMs;
-        previousStep = step;
         continue;
       } else {
         return {
-          setpoint: step.interpolation
-            ? Math.floor(
-                interpolateSetpoint(
-                  previousStep?.setpoint || 0,
-                  step.setpoint,
-                  millis / stepDurationMs,
-                  step.interpolation,
-                ) * 10,
-              ) / 10
-            : step.setpoint,
-          fanValue: step.fanValue,
+          setpoint: Math.max(Math.min(step.setpoint, 250), 0),
+          fanValue: Math.max(Math.min(step.fanValue ?? 50, 100), 0),
         };
       }
     }
