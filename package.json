@@ -22,8 +22,6 @@
     "@tailwindcss/vite": "^4.2.2",
     "@types/d3": "^7.4.3",
     "bufferutil": "^4.1.0",
-    "chart.js": "^4.5.1",
-    "chartjs-plugin-annotation": "^3.1.0",
     "classnames": "^2.5.1",
     "d3": "^7.9.0",
     "eslint-config-prettier": "^10.1.8",
