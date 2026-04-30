@@ -24,7 +24,7 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
   children,
 }) => {
   const [clientId, setClientId] = useState<number | undefined>();
-  const [ws, setWs] = useState<WebSocket | undefined>();
+  const wsRef = useRef<WebSocket | undefined>(undefined);
   const [status, setStatus] = useState<WsStatus>('disconnected');
   const [lastMessage, setLastMessage] = useState<
     YaegerMessageWrapper | undefined
@@ -41,7 +41,7 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
     websocket.onopen = () => {
       console.log('WebSocket is connected');
       const id = Math.floor(Math.random() * 1000);
-      setWs(websocket);
+      wsRef.current = websocket;
       setClientId(id);
       setStatus('connected');
       websocket.send(
@@ -89,6 +89,7 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
     if (status !== 'connected') return;
     const interval = setInterval(() => {
       const cmd = commandsToSend.current;
+      if (!cmd) return;
       commandsToSend.current = undefined;
       const message = {
         id: DateTime.now().toMillis(),
@@ -96,13 +97,13 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
         ...(cmd ? cmd : {}),
       };
       //console.log('Sending message', message);
-      ws?.send(JSON.stringify(message));
+      wsRef.current?.send(JSON.stringify(message));
     }, 1000 / 10);
 
     return () => {
       clearInterval(interval);
     };
-  }, [host, status, ws]);
+  }, [host, status]);
 
   const sendCommand = useCallback((command: YaegerCommand) => {
     commandsToSend.current = {
@@ -113,7 +114,7 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
 
   const savePreferences = useCallback(
     (preferences: Partial<YaegerPreferences>) => {
-      ws?.send(
+      wsRef.current?.send(
         JSON.stringify({
           id: DateTime.now().toMillis(),
           command: 'setPreferences',
@@ -121,17 +122,17 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
         }),
       );
     },
-    [ws],
+    [],
   );
 
   const startAutotune = useCallback(() => {
-    ws?.send(
+    wsRef.current?.send(
       JSON.stringify({
         id: DateTime.now().toMillis(),
         command: 'autotune',
       }),
     );
-  }, [ws]);
+  }, [wsRef]);
 
   const providerProps = useMemo<ConnectionContextType>(() => {
     return {
