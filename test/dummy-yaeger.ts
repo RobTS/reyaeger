@@ -167,6 +167,7 @@ wss.on('connection', (ws: WebSocket) => {
         Setpoint: autotuner.getSetpoint(),
         Mode: autotuner.getOperationalMode() === 'Auto' ? 'PID' : 'Manual',
         Target: target,
+        wifiStrength: -40,
       };
       const newMessage: ReferenceMessage = {
         message: result,

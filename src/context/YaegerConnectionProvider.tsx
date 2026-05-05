@@ -36,23 +36,19 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
   const commandsToSend = useRef<YaegerCommand | undefined>(undefined);
 
   useEffect(() => {
-    const websocket = new WebSocket(`ws://${host}/ws`);
-
-    websocket.onopen = () => {
+    const onOpen = () => {
       console.log('WebSocket is connected');
       const id = Math.floor(Math.random() * 1000);
-      wsRef.current = websocket;
       setClientId(id);
       setStatus('connected');
-      websocket.send(
+      wsRef.current?.send(
         JSON.stringify({
           id: DateTime.now().toMillis(),
           command: 'getPreferences',
         }),
       );
     };
-
-    websocket.onmessage = (event) => {
+    const onMessage = (event: MessageEvent) => {
       try {
         const message: YaegerMessage = JSON.parse(event.data).data;
         if (message) {
@@ -70,18 +66,32 @@ export const YaegerConnectionProvider: React.FC<Props> = ({
       }
     };
 
-    websocket.onerror = (error: Event) => {
+    const onError = (error: Event) => {
       console.error('WebSocket error:', error);
       setStatus('error');
       setError(error as unknown as Error);
+      wsRef.current?.close();
     };
 
-    websocket.onclose = () => {
+    const onClose = () => {
       console.log('WebSocket is closed');
+      wsRef.current = undefined;
     };
+
+    const interval = setInterval(() => {
+      if (wsRef.current) return;
+      const websocket = new WebSocket(`ws://${host}/ws`);
+      websocket.onmessage = onMessage;
+      websocket.onopen = onOpen;
+      websocket.onmessage = onMessage;
+      websocket.onerror = onError;
+      websocket.onclose = onClose;
+      wsRef.current = websocket;
+    }, 1000);
 
     return () => {
-      websocket.close();
+      clearInterval(interval);
+      wsRef.current?.close();
     };
   }, [host]);
 

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { NavLink } from 'react-router';
-import { ConnectionStatus } from '../ConnectionStatus.tsx';
+import { ConnectionStatus, WifiStatus } from '../ConnectionStatus.tsx';
 
 export const Layout: React.FC<{
   children: React.ReactNode | React.ReactNode[];
@@ -33,6 +33,7 @@ export const Layout: React.FC<{
             Settings
           </NavLink>
         </div>
+        <WifiStatus />
         <ConnectionStatus />
       </div>
       <div className={'h-full p-4 flex flex-col items-center'}>

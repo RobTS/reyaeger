@@ -35,6 +35,7 @@ export type YaegerStatusMessage = {
   pidKp: number;
   pidKi: number;
   pidKd: number;
+  wifiStrength: number;
 };
 
 export type YaegerMessageWrapper = {
