@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useMemo } from 'react';
 import Dropzone from 'react-dropzone';
 import {
   useProfileExecutionCommands,
@@ -23,8 +24,10 @@ import {
 import { get, last } from 'lodash-es';
 import { useAppDispatch, useAppSelector } from '../../state/store.ts';
 import { Actions } from '../../state/actions';
-import { useMemo } from 'react';
-import { convertLegacyToNxProfile } from '../../common/profileUtils.ts';
+import {
+  convertKlProfile,
+  convertLegacyToNxProfile,
+} from '../../common/profileUtils.ts';
 
 const DownloadProfileButton: React.FC<{ className?: string }> = ({
   className,
@@ -133,6 +136,10 @@ export const ProfileControls: React.FC = () => {
               }
             } catch (error) {
               console.log('upload failed:', error);
+              if (typeof e.target?.result === 'string') {
+                const profile = convertKlProfile(e.target.result);
+                if (profile) dispatch(Actions.setProfile(profile));
+              }
             }
           };
           reader.readAsText(file);

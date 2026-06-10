@@ -1,4 +1,4 @@
-import { isNumber, last, times } from 'lodash-es';
+import { chunk, isNumber, last, orderBy, times } from 'lodash-es';
 import { getCurveForPoints } from './splineUtils.ts';
 import type {
   FanPhase,
@@ -79,4 +79,46 @@ export const convertLegacyToNxProfile = (
     heaterPhases,
     createdAt: DateTime.now().toISOTime(),
   };
+};
+
+export const convertKlProfile = (p: string): NxProfile | undefined => {
+  try {
+    const result = p
+      .split('\n')
+      .map((item) => item.split(/:(.*)/s) as [string, string])
+      .reduce<Record<string, string>>((acc, [key, value]) => {
+        if (!value) return acc;
+        acc[key] = value.trim();
+        return acc;
+      }, {});
+    const heaterPhases = orderBy(
+      chunk(result.roast_profile?.split(',') || [], 2)
+        .map(([time, temp]) => {
+          return {
+            time: parseFloat(time!),
+            temperature: parseFloat(temp!),
+          };
+        })
+        .filter((item) => item.time || item.temperature),
+      'time',
+    );
+    const fanPhases = orderBy(
+      chunk(result.fan_profile?.split(',') || [], 2)
+        .map(([time, fanSpeed]) => {
+          return {
+            time: parseFloat(time!),
+            fanSpeed: (100 * parseFloat(fanSpeed!)) / 16500,
+          };
+        })
+        .filter((item) => item.time || item.fanSpeed),
+      'time',
+    );
+    return {
+      heaterPhases,
+      fanPhases,
+      name: result.profile_short_name || 'Unknown',
+    };
+  } catch {
+    return undefined;
+  }
 };

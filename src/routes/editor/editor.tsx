@@ -27,7 +27,10 @@ import {
   faUpload,
 } from '@fortawesome/free-solid-svg-icons';
 import Dropzone from 'react-dropzone';
-import { convertLegacyToNxProfile } from '../../common/profileUtils.ts';
+import {
+  convertKlProfile,
+  convertLegacyToNxProfile,
+} from '../../common/profileUtils.ts';
 import {
   useRecorderEvents,
   useRecorderRecords,
@@ -986,6 +989,16 @@ export const BezierCurveEditor: React.FC<Props> = ({
                     }
                   } catch (error) {
                     console.log('upload failed:', error);
+                    if (typeof e.target?.result === 'string') {
+                      const profile = convertKlProfile(e.target.result);
+                      if (profile)
+                        dispatch(
+                          Actions.prefillProfileDraft({
+                            target: draftType,
+                            profile,
+                          }),
+                        );
+                    }
                   }
                 };
                 reader.readAsText(file);
